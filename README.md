@@ -1,9 +1,6 @@
 ## Build status
 <!-- Build Status populated by Github Actions runs -->
-ROS 2 Distro | Branch | Build status
-:----------: | :----: | :----------:
-**Humble** | [`humble`](../../tree/humble) | [![Humble Firmware Build](../../actions/workflows/humble-firmware-build.yml/badge.svg?branch=humble)](../../actions/workflows/humble-firmware-build.yml?branch=humble)
-
+This repo has been turn into local so not much robot can use this
 ## Installation
 All software mentioned in this guide must be installed on the robot computer.
 
@@ -13,7 +10,7 @@ It is assumed that you already have ROS2 and linorobot2 package installed. If yo
 ### 2. Download linorobot2_hardware
 
     cd $HOME
-    git clone https://github.com/MarcellinoAcel/Acel_robot_hardware.git -b $ROS_DISTRO
+    git clone https://github.com/MarcellinoAcel/Acel_robot_hardware.git
 
 ### 3. Install PlatformIO
 Download and install platformio. [Platformio](https://platformio.org/) allows you to develop, configure, and upload the firmware without the Arduino IDE. This means that you can upload the firmware remotely which is ideal on headless setup especially when all components have already been fixed. 
