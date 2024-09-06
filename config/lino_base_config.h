@@ -24,7 +24,7 @@
 
 #define USE_BTS7960_MOTOR_DRIVER        // BTS7970 Motor Driver
 
-#define USE_MPU6050_IMU
+#define USE_BNO055_IMU
 
 #define K_P 15               // P constant
 #define K_I 5                // I constant
