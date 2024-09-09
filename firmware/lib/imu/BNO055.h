@@ -32,12 +32,12 @@ public:
     geometry_msgs__msg__Vector3 readGyroscope() override
     {
         sensors_event_t gyro_event;
-        bno.getEvent(&gyro_event, Adafruit_BNO055::VECTOR_EULER);
+        bno.getEvent(&gyro_event, Adafruit_BNO055::VECTOR_GYROSCOPE);
         geometry_msgs__msg__Vector3 gyro_data;
 
-        gyro_data.x = gyro_event.orientation.x; // No conversion needed, values are in rad/s
-        gyro_data.y = gyro_event.orientation.y;
-        gyro_data.z = gyro_event.orientation.z;
+        gyro_data.x = gyro_event.gyro.x; // No conversion needed, values are in rad/s
+        gyro_data.y = gyro_event.gyro.y;
+        gyro_data.z = gyro_event.gyro.z;
 
         return gyro_data;
     }

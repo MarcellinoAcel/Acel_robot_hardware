@@ -1,87 +1,38 @@
-class PID {
-private:
-  float KP, KI, KD;
-  float encPrev;
-  float angular_vel_Prev;
-  float error_integral;
-  float error_previous;
-  float pwm_max = 255;
+// Copyright (c) 2021 Juan Miguel Jimeno
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-  float total_gear_ratio = 19.2 * 3;
-  float enc_ppr = 200;
+#ifndef PID_H
+#define PID_H
 
-  float angular_vel_Filt = 0;
-  float angular_vel = 0;
-  float eIntegral = 0;
-  float prevError = 0;
-  float lowpass_filt = 0;
-  float lowpass_prev = 0;
-public:
-  PID(float kp_, float ki_, float kd_)
-    : KP(kp_), KI(ki_), KD(kd_) {
-    encPrev = 0.0;
-    angular_vel_Prev = 0.0;
-    angular_vel_Filt = 0.0;
-    error_integral = 0.0;
-    error_previous = 0.0;
-  } 
-  float calculate_controlled_rotate(float target, float enc, float deltaT){
-    float error = target - enc;
-    float error_trans = error;
-    if (error_trans > 180) {
-        error_trans -= 360;
-    } else if (error_trans < -180) {
-        error += 360;
-    }
-    eIntegral += error_trans * deltaT;
-    float eDerivative = (error_trans - prevError)/deltaT;
-    prevError = error_trans;
-    return KP*error_trans + KI*eIntegral + KD*eDerivative;
-  }
-  float calculate_controlled_speed(float target, float enc, float deltaT) {
-    /*convert nilai*/
-    angular_vel = (enc - encPrev) / deltaT; //encoder count menjadid encoder count/second
-    encPrev = enc;
+#include "Arduino.h"
 
-    //masukkan ke low pass filter untuk memperbagus hasil
-    angular_vel_Filt = 0.854 * angular_vel_Filt + 0.0728 * angular_vel + 0.0728 * angular_vel_Prev;
-    angular_vel_Prev = angular_vel;
+class PID
+{
+    public:
+        PID(float min_val, float max_val, float kp, float ki, float kd);
+        double compute(float setpoint, float measured_value);
+        void updateConstants(float kp, float ki, float kd);
 
-    /*hitung pid*/
-    //ubah angular_vel_Filt menjadi angular_vel jika ingin menghitung tanpa filter
-    float error = target - angular_vel_Filt; 
-
-    error_integral += error * deltaT;
-    
-    float error_derivative = (error - error_previous) / deltaT;
-    error_previous = error;
-    
-    float u = KP * error + KI * error_integral + KD * error_derivative;
-    return u;
-  }
-
-  float calculate_regular(float target, float curr, float deltaT){
-    float error = target - curr;
-    
-    error_integral += error * deltaT;
-    
-    float error_derivative = (error - error_previous) / deltaT;
-    error_previous = error;
-
-    float u = KP * error + KI * error_integral + KD * error_derivative;
-    return u;
-  }
-  float get_lowPass_enc(float lowpass_input){
-    lowpass_filt = 0.854 * lowpass_filt + 0.0728 * lowpass_input + 0.0728 * lowpass_prev;
-    lowpass_prev = lowpass_input;
-
-    return lowpass_filt;
-  }
-  float getFilteredValue() const {
-    return angular_vel_Filt;
-  }
-  float getPureValue() const{
-    return angular_vel;
-  }
-
+    private:
+        float min_val_;
+        float max_val_;
+        float kp_;
+        float ki_;
+        float kd_;
+        double integral_;
+        double derivative_;
+        double prev_error_;
 };
+
+#endif

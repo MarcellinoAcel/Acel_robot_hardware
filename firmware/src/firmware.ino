@@ -28,14 +28,12 @@
 #include "config.h"
 #include "motor.h"
 #include "kinematics.h"
-#include <pid.h>
-#include <odometry.h>
-// #include "imu.h"
-#include <Encoder.h>
-#include "BNO055.h"
-
+#include "pid.h"
+#include "odometry.h"
+#include "imu.h"
 #define ENCODER_USE_INTERRUPTS
 #define ENCODER_OPTIMIZE_INTERRUPTS
+#include "encoder.h"
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){rclErrorLoop();}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
@@ -71,21 +69,20 @@ enum states
   AGENT_DISCONNECTED
 } state;
 
-// ENCODER PINS
-Encoder enc1(14,15);
-Encoder enc2(11,12);
-Encoder enc3(17,16);
-Encoder enc4(9,10);
-// this new
+Encoder motor1_encoder(MOTOR1_ENCODER_A, MOTOR1_ENCODER_B, COUNTS_PER_REV1, MOTOR1_ENCODER_INV);
+Encoder motor2_encoder(MOTOR2_ENCODER_A, MOTOR2_ENCODER_B, COUNTS_PER_REV2, MOTOR2_ENCODER_INV);
+Encoder motor3_encoder(MOTOR3_ENCODER_A, MOTOR3_ENCODER_B, COUNTS_PER_REV3, MOTOR3_ENCODER_INV);
+Encoder motor4_encoder(MOTOR4_ENCODER_A, MOTOR4_ENCODER_B, COUNTS_PER_REV4, MOTOR4_ENCODER_INV);
+
 Motor motor1_controller(PWM_FREQUENCY, PWM_BITS, MOTOR1_INV, pwm[0], cw[0], ccw[0]);
 Motor motor2_controller(PWM_FREQUENCY, PWM_BITS, MOTOR2_INV, pwm[1], cw[1], ccw[1]);
 Motor motor3_controller(PWM_FREQUENCY, PWM_BITS, MOTOR3_INV, pwm[2], cw[2], ccw[2]);
 Motor motor4_controller(PWM_FREQUENCY, PWM_BITS, MOTOR4_INV, pwm[3], cw[3], ccw[3]);
 
-PID motor1_pid(K_P, K_I, K_D);
-PID motor2_pid(K_P, K_I, K_D);    
-PID motor3_pid(K_P, K_I, K_D);
-PID motor4_pid(K_P, K_I, K_D);
+PID motor1_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
+PID motor2_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
+PID motor3_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
+PID motor4_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
 
 Kinematics kinematics(
     Kinematics::LINO_BASE, 
@@ -98,23 +95,26 @@ Kinematics kinematics(
 );
 
 Odometry odometry;
-BNO055_IMU bno055_imu;
+IMU imu;
 
 void setup() 
 {
+    pinMode(LED_PIN, OUTPUT);
+
+    bool imu_ok = imu.init();
+    if(!imu_ok)
+    {
+        while(1)
+        {
+            flashLED(3);
+        }
+    }
+    
     Serial.begin(115200);
-    // bno055_imu.init();
-    bno055_imu.startSensor();
     set_microros_serial_transports(Serial);
 }
-float deltaT = 0;
-float prevT = 0;
+
 void loop() {
-
-    float currT = micros();
-    deltaT = ((float)(currT - prevT)) / 1.0e6;
-    prevT = currT;
-
     switch (state) 
     {
         case WAITING_AGENT:
@@ -263,17 +263,17 @@ void moveBase()
     );
 
     // get the current speed of each motor
-    float current_rpm1 = motor1_pid.getFilteredValue();
-    float current_rpm2 = motor2_pid.getFilteredValue();
-    float current_rpm3 = motor3_pid.getFilteredValue();
-    float current_rpm4 = motor4_pid.getFilteredValue();
+    float current_rpm1 = motor1_encoder.getRPM();
+    float current_rpm2 = motor2_encoder.getRPM();
+    float current_rpm3 = motor3_encoder.getRPM();
+    float current_rpm4 = motor4_encoder.getRPM();
 
     // the required rpm is capped at -/+ MAX_RPM to prevent the PID from having too much error
     // the PWM value sent to the motor driver is the calculated PID based on required RPM vs measured RPM
-    motor1_controller.spin(motor1_pid.calculate_controlled_speed(req_rpm.motor1, current_rpm1, deltaT));
-    motor2_controller.spin(motor2_pid.calculate_controlled_speed(req_rpm.motor2, current_rpm2, deltaT));
-    motor3_controller.spin(motor3_pid.calculate_controlled_speed(req_rpm.motor3, current_rpm3, deltaT));
-    motor4_controller.spin(motor4_pid.calculate_controlled_speed(req_rpm.motor4, current_rpm4, deltaT));
+    motor1_controller.spin(motor1_pid.compute(req_rpm.motor1, current_rpm1));
+    motor2_controller.spin(motor2_pid.compute(req_rpm.motor2, current_rpm2));
+    motor3_controller.spin(motor3_pid.compute(req_rpm.motor3, current_rpm3));
+    motor4_controller.spin(motor4_pid.compute(req_rpm.motor4, current_rpm4));
 
     Kinematics::velocities current_vel = kinematics.getVelocities(
         current_rpm1, 
@@ -281,8 +281,6 @@ void moveBase()
         current_rpm3, 
         current_rpm4
     );
-
-    
 
     unsigned long now = millis();
     float vel_dt = (now - prev_odom_update) / 1000.0;
@@ -295,15 +293,11 @@ void moveBase()
     );
 }
 
-
-
-
-
 void publishData()
 {
     odom_msg = odometry.getData();
-    imu_msg = bno055_imu.getData();
-    
+    imu_msg = imu.getData();
+
     struct timespec time_stamp = getTime();
 
     odom_msg.header.stamp.sec = time_stamp.tv_sec;

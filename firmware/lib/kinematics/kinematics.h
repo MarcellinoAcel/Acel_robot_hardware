@@ -22,7 +22,7 @@
 class Kinematics
 {
     public:
-        enum base {DIFFERENTIAL_DRIVE, SKID_STEER, MECANUM, OMNI};
+        enum base {DIFFERENTIAL_DRIVE, SKID_STEER, MECANUM};
 
         base base_platform_;
 
@@ -50,7 +50,7 @@ class Kinematics
         };
         Kinematics(base robot_base, int motor_max_rpm, float max_rpm_ratio,
                    float motor_operating_voltage, float motor_power_max_voltage,
-                   float wheel_diameter, float robot_diameter);
+                   float wheel_diameter, float wheels_y_distance);
         velocities getVelocities(float rpm1, float rpm2, float rpm3, float rpm4);
         rpm getRPM(float linear_x, float linear_y, float angular_z);
         float getMaxRPM();
@@ -60,11 +60,11 @@ class Kinematics
         int getTotalWheels(base robot_base);
 
         float max_rpm_;
-        float robot_diameter_;
-        float robot_radius_;
+        float wheels_y_distance_;
         float pwm_res_;
         float wheel_circumference_;
         int total_wheels_;
+        float robot_circumference_ = 0.25;
 };
 
 #endif

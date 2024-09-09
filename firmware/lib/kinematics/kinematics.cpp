@@ -1,17 +1,29 @@
+// Copyright (c) 2021 Juan Miguel Jimeno
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "Arduino.h"
 #include "kinematics.h"
-float toRad(int deg){
-    return deg * M_PI /180;
-}
+#include "math.h"
+
 Kinematics::Kinematics(base robot_base, int motor_max_rpm, float max_rpm_ratio,
                        float motor_operating_voltage, float motor_power_max_voltage,
-                       float wheel_diameter, float robot_diameter):
+                       float wheel_diameter, float wheels_y_distance):
     base_platform_(robot_base),
-    robot_diameter_(robot_diameter),
+    wheels_y_distance_(wheels_y_distance),
     wheel_circumference_(PI * wheel_diameter),
     total_wheels_(getTotalWheels(robot_base))
 {    
-    robot_radius_ = robot_diameter_ / 2;
     motor_power_max_voltage = constrain(motor_power_max_voltage, 0, motor_operating_voltage);
     max_rpm_ =  ((motor_power_max_voltage / motor_operating_voltage) * motor_max_rpm) * max_rpm_ratio;
 }
@@ -19,9 +31,9 @@ Kinematics::Kinematics(base robot_base, int motor_max_rpm, float max_rpm_ratio,
 Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float angular_z)
 {
 
-    float tangential_vel = angular_z * (robot_diameter_ / 2.0);
+    float tangential_vel = angular_z * (wheels_y_distance_ / 2.0);
 
-        
+    //convert m/s to m/min
     float linear_vel_x_mins = linear_x * 60.0;
     float linear_vel_y_mins = linear_y * 60.0;
     //convert rad/s to rad/min
@@ -38,6 +50,10 @@ Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float a
     float xy_sum = a_x_rpm + a_y_rpm;
     float xtan_sum = a_x_rpm + a_tan_rpm;
 
+    //calculate the scale value how much each target velocity
+    //must be scaled down in such cases where the total required RPM
+    //is more than the motor's max RPM
+    //this is to ensure that the required motion is achieved just with slower speed
     if(xy_sum >= max_rpm_ && angular_z == 0)
     {
         float vel_scaler = max_rpm_ / xy_sum;
@@ -58,20 +74,20 @@ Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float a
 
     //calculate for the target motor RPM and direction
     //front-left motor
-    rpm.motor1 = sin(M_PI_4) * x_rpm + cos(M_PI_4) * y_rpm + tan_rpm * robot_radius_;
-    rpm.motor1 = fmax(-max_rpm_, fmin(rpm.motor1, max_rpm_));
+    rpm.motor1 = sin(  M_PI_4) * x_rpm + cos(  M_PI_4) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor1 = constrain(rpm.motor1, -max_rpm_, max_rpm_);
 
     //front-right motor
-    rpm.motor2 = sin(3 * M_PI_4) * x_rpm + cos(3 * M_PI_4) * y_rpm + tan_rpm * robot_radius_;
-    rpm.motor2 = fmax(-max_rpm_, fmin(rpm.motor1, max_rpm_));
+    rpm.motor2 = sin(3*M_PI_4) * x_rpm + cos(3*M_PI_4) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor2 = constrain(rpm.motor2, -max_rpm_, max_rpm_);
 
     //rear-left motor
-    rpm.motor3 = sin(5 * M_PI_4) * x_rpm + cos(5 * M_PI_4) * y_rpm + tan_rpm * robot_radius_;
-    rpm.motor3 = fmax(-max_rpm_, fmin(rpm.motor1, max_rpm_));
+    rpm.motor3 = sin(5*M_PI_4) * x_rpm + cos(5*M_PI_4) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor3 = constrain(rpm.motor3, -max_rpm_, max_rpm_);
 
     //rear-right motor
-    rpm.motor4 = sin(7 * M_PI_4) * x_rpm + cos(7 * M_PI_4) * y_rpm + tan_rpm * robot_radius_;
-    rpm.motor4 = fmax(-max_rpm_, fmin(rpm.motor1, max_rpm_));
+    rpm.motor4 = sin(7*M_PI_4) * x_rpm + cos(7*M_PI_4) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor4 = constrain(rpm.motor4, -max_rpm_, max_rpm_);
 
     return rpm;
 }
@@ -93,50 +109,34 @@ Kinematics::velocities Kinematics::getVelocities(float rpm1, float rpm2, float r
     float average_rps_y;
     float average_rps_a;
 
-    // if(base_platform_ == DIFFERENTIAL_DRIVE)
-    // {
-    //     rpm3 = 0.0;
-    //     rpm4 = 0.0;
-    // }
+    if(base_platform_ == DIFFERENTIAL_DRIVE)
+    {
+        rpm3 = 0.0;
+        rpm4 = 0.0;
+    }
  
-    // //convert average revolutions per minute to revolutions per second
-    // average_rps_x = ((float)(rpm1 + rpm2 + rpm3 + rpm4) / total_wheels_) / 60.0; // RPM
-    // vel.linear_x = average_rps_x * wheel_circumference_; // m/s
-
-    // //convert average revolutions per minute in y axis to revolutions per second
-    // average_rps_y = ((float)(-rpm1 + rpm2 + rpm3 - rpm4) / total_wheels_) / 60.0; // RPM
-    // if(base_platform_ == MECANUM)
-    //     vel.linear_y = average_rps_y * wheel_circumference_; // m/s
-    // else
-    //     vel.linear_y = 0;
-
-    // //convert average revolutions per minute to revolutions per second
-    // average_rps_a = ((float)(-rpm1 + rpm2 - rpm3 + rpm4) / total_wheels_) / 60.0;
-    // vel.angular_z =  (average_rps_a * wheel_circumference_) / (robot_diameter_ / 2.0); //  rad/s
-    
     //convert average revolutions per minute to revolutions per second
-    average_rps_x = ((float)(sin(45) * rpm1 + sin(135) * rpm2 + sin(225) * rpm3 + sin(315) * rpm4) / total_wheels_) / 60.0; // RPM
+    average_rps_x = ((float)(sin(M_PI_4) * rpm1 + sin(3*M_PI_4) * rpm2 + sin(5*M_PI_4) * rpm3 + sin(7*M_PI_4) * rpm4) / total_wheels_) / 60.0; // RPM
     vel.linear_x = average_rps_x * wheel_circumference_; // m/s
 
     //convert average revolutions per minute in y axis to revolutions per second
-    average_rps_y = ((float)(cos(45) * rpm1 + cos(135) * rpm2 + cos(225) * rpm3 + cos(315) * rpm4) / total_wheels_) / 60.0; // RPM
-    
+    average_rps_y = ((float)(cos(M_PI_4) * rpm1 + cos(3*M_PI_4) * rpm2 + cos(5*M_PI_4) * rpm3 + cos(7*M_PI_4) * rpm4) / total_wheels_) / 60.0; // RPM
     vel.linear_y = average_rps_y * wheel_circumference_; // m/s
 
     //convert average revolutions per minute to revolutions per second
-    average_rps_a = ((float)(rpm1 + rpm2 + rpm3 + rpm4) / (4.0 * total_wheels_)) / 60.0;
-    vel.angular_z =  (average_rps_a * wheel_circumference_) / (robot_diameter_ / 2.0); //  rad/s
-    // }
+    average_rps_a = ((float)(-rpm1 + rpm2 - rpm3 + rpm4) / total_wheels_) / 60.0;
+    vel.angular_z =  (average_rps_a * wheel_circumference_) / (robot_circumference_); //  rad/s
+
     return vel;
 }
 
 int Kinematics::getTotalWheels(base robot_base)
 {
-    switch(robot_base){
+    switch(robot_base)
+    {
         case DIFFERENTIAL_DRIVE:    return 2;
         case SKID_STEER:            return 4;
         case MECANUM:               return 4;
-        case OMNI:                  return 4;
         default:                    return 2;
     }
 }
