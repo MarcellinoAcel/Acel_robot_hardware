@@ -59,19 +59,19 @@ Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float a
     //calculate for the target motor RPM and direction
     //front-left motor
     rpm.motor1 = sin(M_PI_4) * x_rpm + cos(M_PI_4) * y_rpm + tan_rpm * robot_radius_;
-    rpm.motor1 = constrain(rpm.motor1, -max_rpm_, max_rpm_);
+    rpm.motor1 = fmax(-max_rpm_, fmin(rpm.motor1, max_rpm_));
 
     //front-right motor
     rpm.motor2 = sin(3 * M_PI_4) * x_rpm + cos(3 * M_PI_4) * y_rpm + tan_rpm * robot_radius_;
-    rpm.motor2 = constrain(rpm.motor2, -max_rpm_, max_rpm_);
+    rpm.motor2 = fmax(-max_rpm_, fmin(rpm.motor1, max_rpm_));
 
     //rear-left motor
     rpm.motor3 = sin(5 * M_PI_4) * x_rpm + cos(5 * M_PI_4) * y_rpm + tan_rpm * robot_radius_;
-    rpm.motor3 = constrain(rpm.motor3, -max_rpm_, max_rpm_);
+    rpm.motor3 = fmax(-max_rpm_, fmin(rpm.motor1, max_rpm_));
 
     //rear-right motor
     rpm.motor4 = sin(7 * M_PI_4) * x_rpm + cos(7 * M_PI_4) * y_rpm + tan_rpm * robot_radius_;
-    rpm.motor4 = constrain(rpm.motor4, -max_rpm_, max_rpm_);
+    rpm.motor4 = fmax(-max_rpm_, fmin(rpm.motor1, max_rpm_));
 
     return rpm;
 }
@@ -93,41 +93,40 @@ Kinematics::velocities Kinematics::getVelocities(float rpm1, float rpm2, float r
     float average_rps_y;
     float average_rps_a;
 
-    if(base_platform_ == DIFFERENTIAL_DRIVE)
-    {
-        rpm3 = 0.0;
-        rpm4 = 0.0;
-    }
+    // if(base_platform_ == DIFFERENTIAL_DRIVE)
+    // {
+    //     rpm3 = 0.0;
+    //     rpm4 = 0.0;
+    // }
  
+    // //convert average revolutions per minute to revolutions per second
+    // average_rps_x = ((float)(rpm1 + rpm2 + rpm3 + rpm4) / total_wheels_) / 60.0; // RPM
+    // vel.linear_x = average_rps_x * wheel_circumference_; // m/s
+
+    // //convert average revolutions per minute in y axis to revolutions per second
+    // average_rps_y = ((float)(-rpm1 + rpm2 + rpm3 - rpm4) / total_wheels_) / 60.0; // RPM
+    // if(base_platform_ == MECANUM)
+    //     vel.linear_y = average_rps_y * wheel_circumference_; // m/s
+    // else
+    //     vel.linear_y = 0;
+
+    // //convert average revolutions per minute to revolutions per second
+    // average_rps_a = ((float)(-rpm1 + rpm2 - rpm3 + rpm4) / total_wheels_) / 60.0;
+    // vel.angular_z =  (average_rps_a * wheel_circumference_) / (robot_diameter_ / 2.0); //  rad/s
+    
     //convert average revolutions per minute to revolutions per second
-    average_rps_x = ((float)(rpm1 + rpm2 + rpm3 + rpm4) / total_wheels_) / 60.0; // RPM
+    average_rps_x = ((float)(sin(45) * rpm1 + sin(135) * rpm2 + sin(225) * rpm3 + sin(315) * rpm4) / total_wheels_) / 60.0; // RPM
     vel.linear_x = average_rps_x * wheel_circumference_; // m/s
 
     //convert average revolutions per minute in y axis to revolutions per second
-    average_rps_y = ((float)(-rpm1 + rpm2 + rpm3 - rpm4) / total_wheels_) / 60.0; // RPM
-    if(base_platform_ == MECANUM)
-        vel.linear_y = average_rps_y * wheel_circumference_; // m/s
-    else
-        vel.linear_y = 0;
+    average_rps_y = ((float)(cos(45) * rpm1 + cos(135) * rpm2 + cos(225) * rpm3 + cos(315) * rpm4) / total_wheels_) / 60.0; // RPM
+    
+    vel.linear_y = average_rps_y * wheel_circumference_; // m/s
 
     //convert average revolutions per minute to revolutions per second
-    average_rps_a = ((float)(-rpm1 + rpm2 - rpm3 + rpm4) / total_wheels_) / 60.0;
+    average_rps_a = ((float)(rpm1 + rpm2 + rpm3 + rpm4) / (4.0 * total_wheels_)) / 60.0;
     vel.angular_z =  (average_rps_a * wheel_circumference_) / (robot_diameter_ / 2.0); //  rad/s
-    
-    if (base_platform_ == OMNI){
-        //convert average revolutions per minute to revolutions per second
-        average_rps_x = ((float)(sin(45) * rpm1 + sin(135) * rpm2 + sin(225) * rpm3 + sin(315) * rpm4) / total_wheels_) / 60.0; // RPM
-        vel.linear_x = average_rps_x * wheel_circumference_; // m/s
-
-        //convert average revolutions per minute in y axis to revolutions per second
-        average_rps_y = ((float)(cos(45) * rpm1 + cos(135) * rpm2 + cos(225) * rpm3 + cos(315) * rpm4) / total_wheels_) / 60.0; // RPM
-        
-        vel.linear_y = average_rps_y * wheel_circumference_; // m/s
-
-        //convert average revolutions per minute to revolutions per second
-        average_rps_a = ((float)(rpm1 + rpm2 + rpm3 + rpm4) / (4.0 * total_wheels_)) / 60.0;
-        vel.angular_z =  (average_rps_a * wheel_circumference_) / (robot_diameter_ / 2.0); //  rad/s
-    }
+    // }
     return vel;
 }
 

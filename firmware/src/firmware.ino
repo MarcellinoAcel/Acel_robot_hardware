@@ -30,8 +30,9 @@
 #include "kinematics.h"
 #include <pid.h>
 #include <odometry.h>
-#include "imu.h"
+// #include "imu.h"
 #include <Encoder.h>
+#include "BNO055.h"
 
 #define ENCODER_USE_INTERRUPTS
 #define ENCODER_OPTIMIZE_INTERRUPTS
@@ -97,15 +98,13 @@ Kinematics kinematics(
 );
 
 Odometry odometry;
-IMU imu;
+BNO055_IMU bno055_imu;
 
 void setup() 
 {
-    pinMode(LED_PIN, OUTPUT);
-
-    bool imu_ok = imu.init();
-    
     Serial.begin(115200);
+    // bno055_imu.init();
+    bno055_imu.startSensor();
     set_microros_serial_transports(Serial);
 }
 float deltaT = 0;
@@ -283,6 +282,8 @@ void moveBase()
         current_rpm4
     );
 
+    
+
     unsigned long now = millis();
     float vel_dt = (now - prev_odom_update) / 1000.0;
     prev_odom_update = now;
@@ -294,11 +295,15 @@ void moveBase()
     );
 }
 
+
+
+
+
 void publishData()
 {
     odom_msg = odometry.getData();
-    imu_msg = imu.getData();
-
+    imu_msg = bno055_imu.getData();
+    
     struct timespec time_stamp = getTime();
 
     odom_msg.header.stamp.sec = time_stamp.tv_sec;

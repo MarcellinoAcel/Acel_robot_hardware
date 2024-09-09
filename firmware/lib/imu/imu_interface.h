@@ -58,16 +58,17 @@ class IMUInterface
 
         virtual geometry_msgs__msg__Vector3 readAccelerometer() = 0;
         virtual geometry_msgs__msg__Vector3 readGyroscope() = 0;
-        virtual bool startSensor() = 0;
+        // virtual bool startSensor() = 0;
+        void startSensor();
 
-        bool init()
-        {
-            bool sensor_ok = startSensor();
-            if(sensor_ok)
-                calibrateGyro();
+        // bool init()
+        // {
+        //     bool sensor_ok = startSensor();
+        //     if(sensor_ok)
+        //         calibrateGyro();
 
-            return sensor_ok;
-        }
+        //     return sensor_ok;
+        // }
 
         sensor_msgs__msg__Imu getData()
         {
