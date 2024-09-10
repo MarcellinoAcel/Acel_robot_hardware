@@ -16,6 +16,10 @@
 #include "kinematics.h"
 #include "math.h"
 
+float toRad(float deg){
+    return deg * M_PI/180;
+}
+
 Kinematics::Kinematics(base robot_base, int motor_max_rpm, float max_rpm_ratio,
                        float motor_operating_voltage, float motor_power_max_voltage,
                        float wheel_diameter, float wheels_y_distance):
@@ -74,19 +78,19 @@ Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float a
 
     //calculate for the target motor RPM and direction
     //front-left motor
-    rpm.motor1 = sin(  M_PI_4) * x_rpm + cos(  M_PI_4) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor1 = sin(toRad(45)) * x_rpm + cos(toRad(45)) * y_rpm + robot_circumference_ * tan_rpm;
     rpm.motor1 = constrain(rpm.motor1, -max_rpm_, max_rpm_);
 
     //front-right motor
-    rpm.motor2 = sin(3*M_PI_4) * x_rpm + cos(3*M_PI_4) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor2 = sin(toRad(135)) * x_rpm + cos(toRad(135)) * y_rpm + robot_circumference_ * tan_rpm;
     rpm.motor2 = constrain(rpm.motor2, -max_rpm_, max_rpm_);
 
     //rear-left motor
-    rpm.motor3 = sin(5*M_PI_4) * x_rpm + cos(5*M_PI_4) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor3 = sin(toRad(225)) * x_rpm + cos(toRad(225)) * y_rpm + robot_circumference_ * tan_rpm;
     rpm.motor3 = constrain(rpm.motor3, -max_rpm_, max_rpm_);
 
     //rear-right motor
-    rpm.motor4 = sin(7*M_PI_4) * x_rpm + cos(7*M_PI_4) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor4 = sin(toRad(315)) * x_rpm + cos(toRad(315)) * y_rpm + robot_circumference_ * tan_rpm;
     rpm.motor4 = constrain(rpm.motor4, -max_rpm_, max_rpm_);
 
     return rpm;
@@ -116,11 +120,11 @@ Kinematics::velocities Kinematics::getVelocities(float rpm1, float rpm2, float r
     }
  
     //convert average revolutions per minute to revolutions per second
-    average_rps_x = ((float)(sin(M_PI_4) * rpm1 + sin(3*M_PI_4) * rpm2 + sin(5*M_PI_4) * rpm3 + sin(7*M_PI_4) * rpm4) / total_wheels_) / 60.0; // RPM
+    average_rps_x = ((float)(sin(toRad(45)) * rpm1 + sin(toRad(135)) * rpm2 + sin(toRad(225)) * rpm3 + sin(toRad(315)) * rpm4) / total_wheels_) / 60.0; // RPM
     vel.linear_x = average_rps_x * wheel_circumference_; // m/s
 
     //convert average revolutions per minute in y axis to revolutions per second
-    average_rps_y = ((float)(cos(M_PI_4) * rpm1 + cos(3*M_PI_4) * rpm2 + cos(5*M_PI_4) * rpm3 + cos(7*M_PI_4) * rpm4) / total_wheels_) / 60.0; // RPM
+    average_rps_y = ((float)(cos(toRad(45)) * rpm1 + cos(toRad(135)) * rpm2 + cos(toRad(225)) * rpm3 + cos(toRad(315)) * rpm4) / total_wheels_) / 60.0; // RPM
     vel.linear_y = average_rps_y * wheel_circumference_; // m/s
 
     //convert average revolutions per minute to revolutions per second

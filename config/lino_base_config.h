@@ -46,6 +46,16 @@ ROBOT ORIENTATION
          BACK
 */
 
+/*
+ROBOT ORIENTATION
+FRONT = X
+LEFT  = Y
+         FRONT 
+    MOTOR1  MOTOR4  (2WD/ACKERMANN)
+    MOTOR2  MOTOR3  (4WD/MECANUM)  
+         BACK 
+*/
+
 //define your robot' specs here
 #define MOTOR_MAX_RPM 550                   // motor's max RPM          
 #define MAX_RPM_RATIO 0.85                  // max RPM allowed for each MAX_RPM_ALLOWED = MOTOR_MAX_RPM * MAX_RPM_RATIO          
@@ -77,14 +87,14 @@ ROBOT ORIENTATION
 #define MOTOR4_ENCODER_A 14
 #define MOTOR4_ENCODER_B 15 
 
-#define MOTOR1_ENCODER_A 11
-#define MOTOR1_ENCODER_B 12 
+#define MOTOR3_ENCODER_A 11
+#define MOTOR3_ENCODER_B 12 
 
 #define MOTOR2_ENCODER_A 17
 #define MOTOR2_ENCODER_B 16 
 
-#define MOTOR3_ENCODER_A 9
-#define MOTOR3_ENCODER_B 10
+#define MOTOR1_ENCODER_A 9
+#define MOTOR1_ENCODER_B 10
 
 // MOTOR PINS 
 
@@ -132,8 +142,8 @@ ROBOT ORIENTATION
 #endif 
 
 #ifdef USE_BTS7960_MOTOR_DRIVER
-  const int cw[4] = {3,36,5,22};
-  const int ccw[4] ={4,37,6,23};
+  const int cw[4] = {3,22,5,36};
+  const int ccw[4] ={4,23,6,37};
   /*
   1 = 36, 37
   2 = 5,  6
