@@ -40,5 +40,9 @@
     #define IMU FakeIMU
 #endif
 
+#ifdef USE_BNO055_IMU
+    #define IMU BNO055_IMU
+#endif
+
 #endif
 

@@ -1,1 +1,4 @@
 https://github.com/micro-ROS/micro_ros_platformio
+Adafruit_I2CDevice
+SPI
+adafruit/Adafruit BNO055@^1.6.3

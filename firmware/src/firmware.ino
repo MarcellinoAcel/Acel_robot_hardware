@@ -95,13 +95,13 @@ Kinematics kinematics(
 );
 
 Odometry odometry;
-IMU imu;
+IMU imu_sensor;
 
 void setup() 
 {
     pinMode(LED_PIN, OUTPUT);
 
-    bool imu_ok = imu.init();
+    bool imu_ok = imu_sensor.init();
     if(!imu_ok)
     {
         while(1)
@@ -296,7 +296,7 @@ void moveBase()
 void publishData()
 {
     odom_msg = odometry.getData();
-    imu_msg = imu.getData();
+    imu_msg = imu_sensor.getData();
 
     struct timespec time_stamp = getTime();
 

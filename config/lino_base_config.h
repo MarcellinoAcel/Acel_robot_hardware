@@ -29,9 +29,10 @@
 
 //uncomment the IMU you're using
 // #define USE_GY85_IMU
-#define USE_MPU6050_IMU
+// #define USE_MPU6050_IMU
 // #define USE_MPU9150_IMU
 // #define USE_MPU9250_IMU
+#define USE_BNO055_IMU
 
 #define K_P 0.6                             // P constant
 #define K_I 0.8                             // I constant
