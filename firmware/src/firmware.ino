@@ -113,10 +113,6 @@ void setup()
     
     Serial.begin(115200);
     set_microros_serial_transports(Serial);
-    // motor1_controller.init();
-    // motor2_controller.init();
-    // motor3_controller.init();
-    // motor4_controller.init();
 }
 
 bool createEntities()
