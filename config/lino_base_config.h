@@ -35,9 +35,9 @@
 // #define USE_MPU9250_IMU
 #define USE_BNO055_IMU
 
-#define K_P 18                             // P constant
-#define K_I 4                             // I constant
-#define K_D 0                             // D constant
+#define K_P 25
+#define K_I 6.5
+#define K_D 0
 
 /*
 ROBOT ORIENTATION

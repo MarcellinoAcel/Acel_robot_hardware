@@ -179,7 +179,7 @@ void loop() {
     switch (state) 
     {
         case WAITING_AGENT:
-            EXECUTE_EVERY_N_MS(10, state = (RMW_RET_OK == rmw_uros_ping_agent(10, 1)) ? AGENT_AVAILABLE : WAITING_AGENT;);
+            EXECUTE_EVERY_N_MS(500, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 1)) ? AGENT_AVAILABLE : WAITING_AGENT;);
             break;
         case AGENT_AVAILABLE:
             state = (true == createEntities()) ? AGENT_CONNECTED : WAITING_AGENT;
@@ -189,7 +189,7 @@ void loop() {
             }
             break;
         case AGENT_CONNECTED:
-            EXECUTE_EVERY_N_MS(10, state = (RMW_RET_OK == rmw_uros_ping_agent(10, 1)) ? AGENT_CONNECTED : AGENT_DISCONNECTED;);
+            EXECUTE_EVERY_N_MS(200, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 1)) ? AGENT_CONNECTED : AGENT_DISCONNECTED;);
             if (state == AGENT_CONNECTED) 
             {
                 rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
@@ -253,7 +253,7 @@ void moveBase()
     float deltaT = ((float)(currT - prevT)) / 1.0e6;
     prevT = currT;
     // brake if there's no command received, or when it's only the first command sent
-    if(((millis() - prev_cmd_time) >= 100)) 
+    if(((millis() - prev_cmd_time) >= 200)) 
     {
         twist_msg.linear.x = 0.0;
         twist_msg.linear.y = 0.0;
