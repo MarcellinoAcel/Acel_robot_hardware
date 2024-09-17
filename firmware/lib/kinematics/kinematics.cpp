@@ -35,7 +35,8 @@ Kinematics::Kinematics(base robot_base, int motor_max_rpm, float max_rpm_ratio,
 Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float angular_z)
 {
 
-    float tangential_vel = angular_z * (robot_circumference_ / 2.0);
+    // float tangential_vel = angular_z * (robot_circumference_);
+    float tangential_vel = angular_z;
 
     //convert m/s to m/min
     float linear_vel_x_mins = linear_x * 60.0;
@@ -78,20 +79,20 @@ Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float a
 
     //calculate for the target motor RPM and direction
     //front-left motor
-    rpm.motor1 = sin(toRad(45 )) * x_rpm + cos(toRad(45 )) * y_rpm + robot_circumference_ * tan_rpm;
-    rpm.motor1 = fmax(-max_rpm_,fmin(rpm.motor1,max_rpm_));
+    float rpm_motor1 = sin(toRad(45 )) * x_rpm + cos(toRad(45 )) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor1 = fmax(-max_rpm_,fmin(rpm_motor1,max_rpm_));
 
     //front-right motor
-    rpm.motor2 = sin(toRad(135)) * x_rpm + cos(toRad(135)) * y_rpm + robot_circumference_ * tan_rpm;
-    rpm.motor2 = fmax(-max_rpm_,fmin(rpm.motor2,max_rpm_));
+    float rpm_motor2 = sin(toRad(135)) * x_rpm + cos(toRad(135)) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor2 = fmax(-max_rpm_,fmin(rpm_motor2,max_rpm_));
 
     //rear-left motor
-    rpm.motor3 = sin(toRad(225)) * x_rpm + cos(toRad(225)) * y_rpm + robot_circumference_ * tan_rpm;
-    rpm.motor3 = fmax(-max_rpm_,fmin(rpm.motor3,max_rpm_));
+    float rpm_motor3 = sin(toRad(225)) * x_rpm + cos(toRad(225)) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor3 = fmax(-max_rpm_,fmin(rpm_motor3,max_rpm_));
 
     //rear-right motor
-    rpm.motor4 = sin(toRad(315)) * x_rpm + cos(toRad(315)) * y_rpm + robot_circumference_ * tan_rpm;
-    rpm.motor4 = fmax(-max_rpm_,fmin(rpm.motor4,max_rpm_));
+    float rpm_motor4 = sin(toRad(315)) * x_rpm + cos(toRad(315)) * y_rpm + robot_circumference_ * tan_rpm;
+    rpm.motor4 = fmax(-max_rpm_,fmin(rpm_motor4,max_rpm_));
 
     return rpm;
 }
