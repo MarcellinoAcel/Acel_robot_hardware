@@ -79,19 +79,19 @@ Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float a
 
     //calculate for the target motor RPM and direction
     //front-left motor
-    float rpm_motor1 = sin(toRad(45 )) * x_rpm + cos(toRad(45 )) * y_rpm + robot_circumference_ * tan_rpm;
+    float rpm_motor1 = -sin(toRad(45 )) * x_rpm + cos(toRad(45 )) * y_rpm + robot_circumference_ * tan_rpm;
     rpm.motor1 = fmax(-max_rpm_,fmin(rpm_motor1,max_rpm_));
 
     //front-right motor
-    float rpm_motor2 = sin(toRad(135)) * x_rpm + cos(toRad(135)) * y_rpm + robot_circumference_ * tan_rpm;
+    float rpm_motor2 = -sin(toRad(135)) * x_rpm + cos(toRad(135)) * y_rpm + robot_circumference_ * tan_rpm;
     rpm.motor2 = fmax(-max_rpm_,fmin(rpm_motor2,max_rpm_));
 
     //rear-left motor
-    float rpm_motor3 = sin(toRad(225)) * x_rpm + cos(toRad(225)) * y_rpm + robot_circumference_ * tan_rpm;
+    float rpm_motor3 = -sin(toRad(225)) * x_rpm + cos(toRad(225)) * y_rpm + robot_circumference_ * tan_rpm;
     rpm.motor3 = fmax(-max_rpm_,fmin(rpm_motor3,max_rpm_));
 
     //rear-right motor
-    float rpm_motor4 = sin(toRad(315)) * x_rpm + cos(toRad(315)) * y_rpm + robot_circumference_ * tan_rpm;
+    float rpm_motor4 = -sin(toRad(315)) * x_rpm + cos(toRad(315)) * y_rpm + robot_circumference_ * tan_rpm;
     rpm.motor4 = fmax(-max_rpm_,fmin(rpm_motor4,max_rpm_));
 
     return rpm;
@@ -110,7 +110,7 @@ Kinematics::velocities Kinematics::getVelocities(float rpm1, float rpm2, float r
     float average_rps_a;
 
     //convert average revolutions per minute to revolutions per second
-    average_rps_x = ((float)(sin(toRad(45)) * rpm1 + sin(toRad(135)) * rpm2 + sin(toRad(225)) * rpm3 + sin(toRad(315)) * rpm4) / total_wheels_) / 60.0; // RPM
+    average_rps_x = ((float)(-sin(toRad(45)) * rpm1 + -sin(toRad(135)) * rpm2 + -sin(toRad(225)) * rpm3 + -sin(toRad(315)) * rpm4) / total_wheels_) / 60.0; // RPM
     vel.linear_x = average_rps_x * wheel_circumference_; // m/s
 
     //convert average revolutions per minute in y axis to revolutions per second
