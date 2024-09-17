@@ -17,15 +17,16 @@
 #define LED_PIN 13 //used for debugging status
 
 //uncomment the base you're building
-#define LINO_BASE DIFFERENTIAL_DRIVE       // 2WD and Tracked robot w/ 2 motors
+// #define LINO_BASE DIFFERENTIAL_DRIVE       // 2WD and Tracked robot w/ 2 motors
 // #define LINO_BASE SKID_STEER            // 4WD robot
 // #define LINO_BASE MECANUM               // Mecanum drive robot
+#define LINO_BASE OMNI
 
 //uncomment the motor driver you're using
 // #define USE_GENERIC_2_IN_MOTOR_DRIVER      // Motor drivers with 2 Direction Pins(INA, INB) and 1 PWM(ENABLE) pin ie. L298, L293, VNH5019
-// #define USE_GENERIC_1_IN_MOTOR_DRIVER   // Motor drivers with 1 Direction Pin(INA) and 1 PWM(ENABLE) pin.
-#define USE_BTS7960_MOTOR_DRIVER        // BTS7970 Motor Driver
-// #define USE_ESC_MOTOR_DRIVER            // Motor ESC for brushless motors
+// #define USE_GENERIC_1_IN_MOTOR_DRIVER      // Motor drivers with 1 Direction Pin(INA) and 1 PWM(ENABLE) pin.
+#define USE_BTS7960_MOTOR_DRIVER              // BTS7970 Motor Driver
+// #define USE_ESC_MOTOR_DRIVER               // Motor ESC for brushless motors
 
 //uncomment the IMU you're using
 // #define USE_GY85_IMU
@@ -34,9 +35,9 @@
 // #define USE_MPU9250_IMU
 #define USE_BNO055_IMU
 
-#define K_P 0.6                             // P constant
-#define K_I 0.8                             // I constant
-#define K_D 0.5                             // D constant
+#define K_P 18                             // P constant
+#define K_I 4                             // I constant
+#define K_D 0                             // D constant
 
 /*
 ROBOT ORIENTATION
@@ -47,12 +48,12 @@ ROBOT ORIENTATION
 */
 
 /*
-ROBOT ORIENTATION
+ROBOT ORIENTATION OMNI
 FRONT = X
 LEFT  = Y
          FRONT 
-    MOTOR1  MOTOR4  (2WD/ACKERMANN)
-    MOTOR2  MOTOR3  (4WD/MECANUM)  
+    MOTOR1  MOTOR4 
+    MOTOR2  MOTOR3   
          BACK 
 */
 
@@ -67,7 +68,7 @@ LEFT  = Y
 #define COUNTS_PER_REV3 3840                // wheel3 encoder's no of ticks per rev
 #define COUNTS_PER_REV4 3840                // wheel4 encoder's no of ticks per rev
 #define WHEEL_DIAMETER 0.1                 // wheel's diameter in meters
-#define ROBOT_DIAMETER 0.1                  // distance between left and right wheels
+#define ROBOT_DIAMETER 0.5                  // distance between left and right wheels
 #define ROBOT_RADIUS 0.05
 #define PWM_BITS 10                         // PWM Resolution of the microcontroller
 #define PWM_FREQUENCY 20000                 // PWM Frequency
@@ -87,11 +88,11 @@ LEFT  = Y
 #define MOTOR4_ENCODER_A 14
 #define MOTOR4_ENCODER_B 15 
 
-#define MOTOR3_ENCODER_A 11
-#define MOTOR3_ENCODER_B 12 
+#define MOTOR3_ENCODER_A 17
+#define MOTOR3_ENCODER_B 16 
 
-#define MOTOR2_ENCODER_A 17
-#define MOTOR2_ENCODER_B 16 
+#define MOTOR2_ENCODER_A 11
+#define MOTOR2_ENCODER_B 12 
 
 #define MOTOR1_ENCODER_A 9
 #define MOTOR1_ENCODER_B 10
@@ -142,16 +143,29 @@ LEFT  = Y
 #endif 
 
 #ifdef USE_BTS7960_MOTOR_DRIVER
-  const int cw[4] = {3,22,5,36};
-  const int ccw[4] ={4,23,6,37};
+  #define MOTOR4_PWM -1 //DON'T TOUCH THIS! This is just a placeholder
+  #define MOTOR4_IN_A 18 // Pin no 21 is not a PWM pin on Teensy 4.x, you can use pin no 1 instead.
+  #define MOTOR4_IN_B 19 // Pin no 20 is not a PWM pin on Teensy 4.x, you can use pin no 0 instead.
+
+  #define MOTOR3_PWM -1 //DON'T TOUCH THIS! This is just a placeholder
+  #define MOTOR3_IN_A 5
+  #define MOTOR3_IN_B 6
+
+  #define MOTOR2_PWM -1 //DON'T TOUCH THIS! This is just a placeholder
+  #define MOTOR2_IN_A 22
+  #define MOTOR2_IN_B 23
+
+  #define MOTOR1_PWM -1 //DON'T TOUCH THIS! This is just a placeholder
+  #define MOTOR1_IN_A 3
+  #define MOTOR1_IN_B 4
   /*
-  1 = 36, 37
+  1 = 18, 19
   2 = 5,  6
   3 = 22, 23
   4 = 3,  4
   */
-  const int pwm[4] ={-1,-1,-1,-1};
-  #define PWM_MAX 200
+  // const int pwm[4] ={-1,-1,-1,-1};
+  #define PWM_MAX 255
   #define PWM_MIN -PWM_MAX
 #endif
 

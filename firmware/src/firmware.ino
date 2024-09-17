@@ -24,9 +24,11 @@
 #include <sensor_msgs/msg/imu.h>
 #include <geometry_msgs/msg/twist.h>
 #include <geometry_msgs/msg/vector3.h>
+#include <std_msgs/msg/float32.h>
 
 #include "config.h"
-#include "motor.h"
+// #include "motor.h"
+#include "motor_control.h"
 #include "kinematics.h"
 #include "pid.h"
 #include "odometry.h"
@@ -46,10 +48,12 @@
 rcl_publisher_t odom_publisher;
 rcl_publisher_t imu_publisher;
 rcl_subscription_t twist_subscriber;
+rcl_publisher_t checking_output_publisher;
 
 nav_msgs__msg__Odometry odom_msg;
 sensor_msgs__msg__Imu imu_msg;
 geometry_msgs__msg__Twist twist_msg;
+std_msgs__msg__Float32 checking_output_msg;
 
 rclc_executor_t executor;
 rclc_support_t support;
@@ -74,10 +78,10 @@ Encoder motor2_encoder(MOTOR2_ENCODER_A, MOTOR2_ENCODER_B, COUNTS_PER_REV2, MOTO
 Encoder motor3_encoder(MOTOR3_ENCODER_A, MOTOR3_ENCODER_B, COUNTS_PER_REV3, MOTOR3_ENCODER_INV);
 Encoder motor4_encoder(MOTOR4_ENCODER_A, MOTOR4_ENCODER_B, COUNTS_PER_REV4, MOTOR4_ENCODER_INV);
 
-Motor motor1_controller(PWM_FREQUENCY, PWM_BITS, MOTOR1_INV, pwm[0], cw[0], ccw[0]);
-Motor motor2_controller(PWM_FREQUENCY, PWM_BITS, MOTOR2_INV, pwm[1], cw[1], ccw[1]);
-Motor motor3_controller(PWM_FREQUENCY, PWM_BITS, MOTOR3_INV, pwm[2], cw[2], ccw[2]);
-Motor motor4_controller(PWM_FREQUENCY, PWM_BITS, MOTOR4_INV, pwm[3], cw[3], ccw[3]);
+BTS7960 motor1_controller(PWM_FREQUENCY, PWM_BITS, MOTOR1_INV, MOTOR1_PWM, MOTOR1_IN_B, MOTOR1_IN_A);
+BTS7960 motor2_controller(PWM_FREQUENCY, PWM_BITS, MOTOR2_INV, MOTOR2_PWM, MOTOR2_IN_B, MOTOR2_IN_A);
+BTS7960 motor3_controller(PWM_FREQUENCY, PWM_BITS, MOTOR3_INV, MOTOR3_PWM, MOTOR3_IN_B, MOTOR3_IN_A);
+BTS7960 motor4_controller(PWM_FREQUENCY, PWM_BITS, MOTOR4_INV, MOTOR4_PWM, MOTOR4_IN_B, MOTOR4_IN_A);
 
 PID motor1_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
 PID motor2_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
@@ -104,60 +108,15 @@ void setup()
     bool imu_ok = imu_sensor.init();
     if(!imu_ok)
     {
-        while(1)
-        {
-            flashLED(3);
-        }
+        flashLED(3);
     }
     
     Serial.begin(115200);
     set_microros_serial_transports(Serial);
-}
-
-void loop() {
-    switch (state) 
-    {
-        case WAITING_AGENT:
-            EXECUTE_EVERY_N_MS(500, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 1)) ? AGENT_AVAILABLE : WAITING_AGENT;);
-            break;
-        case AGENT_AVAILABLE:
-            state = (true == createEntities()) ? AGENT_CONNECTED : WAITING_AGENT;
-            if (state == WAITING_AGENT) 
-            {
-                destroyEntities();
-            }
-            break;
-        case AGENT_CONNECTED:
-            EXECUTE_EVERY_N_MS(200, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 1)) ? AGENT_CONNECTED : AGENT_DISCONNECTED;);
-            if (state == AGENT_CONNECTED) 
-            {
-                rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
-            }
-            break;
-        case AGENT_DISCONNECTED:
-            destroyEntities();
-            state = WAITING_AGENT;
-            break;
-        default:
-            break;
-    }
-}
-
-void controlCallback(rcl_timer_t * timer, int64_t last_call_time) 
-{
-    RCLC_UNUSED(last_call_time);
-    if (timer != NULL) 
-    {
-       moveBase();
-       publishData();
-    }
-}
-
-void twistCallback(const void * msgin) 
-{
-    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
-
-    prev_cmd_time = millis();
+    // motor1_controller.init();
+    // motor2_controller.init();
+    // motor3_controller.init();
+    // motor4_controller.init();
 }
 
 bool createEntities()
@@ -188,13 +147,12 @@ bool createEntities()
         ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
         "cmd_vel"
     ));
-    // create timer for actuating the motors at 50 Hz (1000/20)
-    const unsigned int control_timeout = 20;
-    RCCHECK(rclc_timer_init_default( 
-        &control_timer, 
-        &support,
-        RCL_MS_TO_NS(control_timeout),
-        controlCallback
+    // create troubleshooting publisher
+    RCCHECK(rclc_publisher_init_default( 
+        &checking_output_publisher, 
+        &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32),
+        "checking_output"
     ));
     executor = rclc_executor_get_zero_initialized_executor();
     RCCHECK(rclc_executor_init(&executor, &support.context, 2, & allocator));
@@ -213,6 +171,45 @@ bool createEntities()
 
     return true;
 }
+
+void loop() {
+    switch (state) 
+    {
+        case WAITING_AGENT:
+            EXECUTE_EVERY_N_MS(500, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 1)) ? AGENT_AVAILABLE : WAITING_AGENT;);
+            break;
+        case AGENT_AVAILABLE:
+            state = (true == createEntities()) ? AGENT_CONNECTED : WAITING_AGENT;
+            if (state == WAITING_AGENT) 
+            {
+                destroyEntities();
+            }
+            break;
+        case AGENT_CONNECTED:
+            EXECUTE_EVERY_N_MS(200, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 1)) ? AGENT_CONNECTED : AGENT_DISCONNECTED;);
+            if (state == AGENT_CONNECTED) 
+            {
+                rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+                publishData();
+                moveBase();
+            }
+            break;
+        case AGENT_DISCONNECTED:
+            destroyEntities();
+            state = WAITING_AGENT;
+            break;
+        default:
+            break;
+    }
+}
+
+void twistCallback(const void * msgin) 
+{
+    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+
+    prev_cmd_time = millis();
+}
+
 
 bool destroyEntities()
 {
@@ -243,9 +240,13 @@ void fullStop()
     motor3_controller.brake();
     motor4_controller.brake();
 }
-
+float prevT  = 0;
+float deltaT = 0;
 void moveBase()
-{
+{   
+    float currT = millis();
+    float deltaT = ((float)(currT - prevT)) / 0.001;
+    prevT = currT;
     // brake if there's no command received, or when it's only the first command sent
     if(((millis() - prev_cmd_time) >= 200)) 
     {
@@ -270,10 +271,22 @@ void moveBase()
 
     // the required rpm is capped at -/+ MAX_RPM to prevent the PID from having too much error
     // the PWM value sent to the motor driver is the calculated PID based on required RPM vs measured RPM
-    motor1_controller.spin(motor1_pid.compute(req_rpm.motor1, current_rpm1));
-    motor2_controller.spin(motor2_pid.compute(req_rpm.motor2, current_rpm2));
-    motor3_controller.spin(motor3_pid.compute(req_rpm.motor3, current_rpm3));
-    motor4_controller.spin(motor4_pid.compute(req_rpm.motor4, current_rpm4));
+    float controlled_motor1 = motor1_pid.control_speed(req_rpm.motor1/60, motor1_encoder.read(), deltaT);
+    float controlled_motor2 = motor2_pid.control_speed(req_rpm.motor2/60, motor2_encoder.read(), deltaT);
+    float controlled_motor3 = motor3_pid.control_speed(req_rpm.motor3/60, motor3_encoder.read(), deltaT);
+    float controlled_motor4 = motor4_pid.control_speed(req_rpm.motor4/60, motor4_encoder.read(), deltaT);
+    if (req_rpm.motor1 == 0){
+        controlled_motor1 = 0;
+        controlled_motor2 = 0;
+        controlled_motor3 = 0;
+        controlled_motor4 = 0;
+    } 
+    motor1_controller.spin(controlled_motor1);
+    motor2_controller.spin(controlled_motor2);
+    motor3_controller.spin(controlled_motor3);
+    motor4_controller.spin(controlled_motor4);
+    checking_output_msg.data = controlled_motor1;
+    RCSOFTCHECK(rcl_publish(&checking_output_publisher, &checking_output_msg, NULL));
 
     Kinematics::velocities current_vel = kinematics.getVelocities(
         current_rpm1, 
@@ -334,10 +347,8 @@ struct timespec getTime()
 
 void rclErrorLoop() 
 {
-    while(true)
-    {
-        flashLED(2);
-    }
+    flashLED(2);
+    
 }
 
 void flashLED(int n_times)

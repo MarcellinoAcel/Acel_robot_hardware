@@ -3,7 +3,21 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/home/marcel/Acel_robot_hardware/firmware/lib/motor_control/**",
+                "/opt/ros/humble/include/**",
+                "/home/marcel/Acel_robot_hardware/firmware/lib/encoder/**",
+                "/home/marcel/Acel_robot_hardware/firmware/lib/imu/**",
+                "/home/marcel/Acel_robot_hardware/firmware/lib/kinematics/**",
+                "/home/marcel/Acel_robot_hardware/firmware/lib/motor/**",
+                "/home/marcel/Acel_robot_hardware/firmware/lib/odometry",
+                "/home/marcel/Acel_robot_hardware/firmware/lib/pid/**",
+                "/home/marcel/Acel_robot_hardware/firmware/lib/**",
+                "/home/marcel/arduino/arduino-1.8.19/hardware/teensy/avr/cores/teensy4/**",
+                "/home/marcel/arduino/arduino-1.8.19/libraries/WiFi/src/**",
+                "/home/marcel/Arduino/libraries/Servo/src/**",
+                "/home/marcel/arduino/arduino-1.8.19/hardware/arduino/avr/libraries/Wire/src/**",
+                "/home/marcel/arduino/arduino-1.8.19/hardware/teensy/avr/cores/teensy4/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

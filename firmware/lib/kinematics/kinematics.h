@@ -22,7 +22,7 @@
 class Kinematics
 {
     public:
-        enum base {DIFFERENTIAL_DRIVE, SKID_STEER, MECANUM};
+        enum base {DIFFERENTIAL_DRIVE, SKID_STEER, MECANUM, OMNI};
 
         base base_platform_;
 
