@@ -37,6 +37,13 @@
 #define ENCODER_OPTIMIZE_INTERRUPTS
 #include "encoder.h"
 
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
+
+Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire2);
+
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){rclErrorLoop();}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){}}
 #define EXECUTE_EVERY_N_MS(MS, X)  do { \
@@ -172,7 +179,7 @@ void loop() {
     switch (state) 
     {
         case WAITING_AGENT:
-            EXECUTE_EVERY_N_MS(500, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 1)) ? AGENT_AVAILABLE : WAITING_AGENT;);
+            EXECUTE_EVERY_N_MS(10, state = (RMW_RET_OK == rmw_uros_ping_agent(10, 1)) ? AGENT_AVAILABLE : WAITING_AGENT;);
             break;
         case AGENT_AVAILABLE:
             state = (true == createEntities()) ? AGENT_CONNECTED : WAITING_AGENT;
@@ -182,10 +189,10 @@ void loop() {
             }
             break;
         case AGENT_CONNECTED:
-            EXECUTE_EVERY_N_MS(200, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 1)) ? AGENT_CONNECTED : AGENT_DISCONNECTED;);
+            EXECUTE_EVERY_N_MS(10, state = (RMW_RET_OK == rmw_uros_ping_agent(10, 1)) ? AGENT_CONNECTED : AGENT_DISCONNECTED;);
             if (state == AGENT_CONNECTED) 
             {
-                rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+                rclc_executor_spin_some(&executor, RCL_MS_TO_NS(1));
                 publishData();
                 moveBase();
             }
@@ -240,11 +247,13 @@ float prevT  = 0;
 float deltaT = 0;
 void moveBase()
 {   
-    float currT = millis();
-    float deltaT = ((float)(currT - prevT)) / 0.001;
+    sensors_event_t angVelocityData;
+    bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
+    float currT = micros();
+    float deltaT = ((float)(currT - prevT)) / 1.0e6;
     prevT = currT;
     // brake if there's no command received, or when it's only the first command sent
-    if(((millis() - prev_cmd_time) >= 200)) 
+    if(((millis() - prev_cmd_time) >= 100)) 
     {
         twist_msg.linear.x = 0.0;
         twist_msg.linear.y = 0.0;
@@ -267,10 +276,10 @@ void moveBase()
 
     // the required rpm is capped at -/+ MAX_RPM to prevent the PID from having too much error
     // the PWM value sent to the motor driver is the calculated PID based on required RPM vs measured RPM
-    float controlled_motor1 = motor1_pid.control_speed(req_rpm.motor1/60, motor1_encoder.read(), deltaT);
-    float controlled_motor2 = motor2_pid.control_speed(req_rpm.motor2/60, motor2_encoder.read(), deltaT);
-    float controlled_motor3 = motor3_pid.control_speed(req_rpm.motor3/60, motor3_encoder.read(), deltaT);
-    float controlled_motor4 = motor4_pid.control_speed(req_rpm.motor4/60, motor4_encoder.read(), deltaT);
+    float controlled_motor1 = motor1_pid.control_speed(req_rpm.motor1 , motor1_encoder.read(), deltaT);
+    float controlled_motor2 = motor2_pid.control_speed(req_rpm.motor2 , motor2_encoder.read(), deltaT);
+    float controlled_motor3 = motor3_pid.control_speed(req_rpm.motor3 , motor3_encoder.read(), deltaT);
+    float controlled_motor4 = motor4_pid.control_speed(req_rpm.motor4 , motor4_encoder.read(), deltaT);
     if (req_rpm.motor1 == 0){
         controlled_motor1 = 0;
         controlled_motor2 = 0;
@@ -281,7 +290,7 @@ void moveBase()
     motor2_controller.spin(controlled_motor2);
     motor3_controller.spin(controlled_motor3);
     motor4_controller.spin(controlled_motor4);
-    checking_output_msg.data = controlled_motor1;
+    checking_output_msg.data = req_rpm.motor1;
     RCSOFTCHECK(rcl_publish(&checking_output_publisher, &checking_output_msg, NULL));
 
     Kinematics::velocities current_vel = kinematics.getVelocities(
@@ -298,7 +307,7 @@ void moveBase()
         vel_dt, 
         current_vel.linear_x, 
         current_vel.linear_y, 
-        current_vel.angular_z
+        angVelocityData.gyro.z
     );
 }
 
