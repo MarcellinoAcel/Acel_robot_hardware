@@ -24,7 +24,7 @@
 #include <sensor_msgs/msg/imu.h>
 #include <geometry_msgs/msg/twist.h>
 #include <geometry_msgs/msg/vector3.h>
-#include <std_msgs/msg/float32.h>
+#include <std_msgs/msg/float32_multi_array.h>
 
 #include "config.h"
 // #include "motor.h"
@@ -41,6 +41,37 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+
+#include <nRF24L01.h>
+#include <RF24.h>
+#include <RF24_config.h>
+
+
+RF24 radio(28, 29); // CE, CSN
+
+byte address[6] = "12345"; // Alamat pengirim
+
+const int motorPWM = 6;
+const int motorCW = 7;
+const int motorCCW = 8;
+
+struct Data {
+  float x1;
+  float y1;
+  
+  float x2;
+  float y2;
+  
+  bool L_but1;
+  bool L_but2;
+  bool L_but3;
+  bool L_but4;
+
+  bool R_but1;
+  bool R_but2;
+  bool R_but3;
+  bool R_but4;
+};
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire2);
 
@@ -60,7 +91,7 @@ rcl_publisher_t checking_output_publisher;
 nav_msgs__msg__Odometry odom_msg;
 sensor_msgs__msg__Imu imu_msg;
 geometry_msgs__msg__Twist twist_msg;
-std_msgs__msg__Float32 checking_output_msg;
+std_msgs__msg__Float32MultiArray checking_output_msg;
 
 rclc_executor_t executor;
 rclc_support_t support;
@@ -120,6 +151,12 @@ void setup()
     
     Serial.begin(115200);
     set_microros_serial_transports(Serial);
+    radio.begin();
+    radio.openReadingPipe(1, address); // Buka saluran untuk membaca dari alamat pengirim
+    radio.setPALevel(RF24_PA_HIGH);
+    radio.setDataRate(RF24_250KBPS);
+    radio.setChannel(1);
+    radio.startListening(); 
 }
 
 bool createEntities()
@@ -154,9 +191,11 @@ bool createEntities()
     RCCHECK(rclc_publisher_init_default( 
         &checking_output_publisher, 
         &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32),
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
         "checking_output"
     ));
+    checking_output_msg.data.data = (float*)malloc(4 * sizeof(float)); // Sesuaikan jumlah elemen
+    checking_output_msg.data.size = 4;
     executor = rclc_executor_get_zero_initialized_executor();
     RCCHECK(rclc_executor_init(&executor, &support.context, 2, & allocator));
     RCCHECK(rclc_executor_add_subscription(
@@ -245,8 +284,23 @@ void fullStop()
 }
 float prevT  = 0;
 float deltaT = 0;
+int automatic = 0;
+float joyY_left = 0;
+float joyX_left = 0;
+float joyY_right = 0;
+float joyX_right = 0;
 void moveBase()
 {   
+    if (radio.available()) {
+        Data data;
+        radio.read(&data, sizeof(data));
+
+        float joyY_left = data.x1;
+        float joyX_left = data.y1;
+        float joyY_right = data.x2;
+        float joyX_right = data.y2;
+    }
+    // float joy_x = map(data.x, 0, 1023)
     sensors_event_t angVelocityData;
     bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
     float currT = micros();
@@ -262,11 +316,21 @@ void moveBase()
         digitalWrite(LED_PIN, HIGH);
     }
     // get the required rpm for each motor based on required velocities, and base used
-    Kinematics::rpm req_rpm = kinematics.getRPM(
-        twist_msg.linear.x, 
-        twist_msg.linear.y, 
-        twist_msg.angular.z
-    );
+    Kinematics::rpm req_rpm;
+    if(automatic){
+        req_rpm = kinematics.getRPM(
+            twist_msg.linear.x, 
+            twist_msg.linear.y, 
+            twist_msg.angular.z
+        );
+    }else{
+        req_rpm = kinematics.getRPM(
+            joyX_left, 
+            joyY_left, 
+            joyY_right
+        );
+    }
+    // Kinematics::rpm req_rpm 
 
     // get the current speed of each motor
     float current_rpm1 = motor1_encoder.getRPM();
@@ -280,7 +344,7 @@ void moveBase()
     float controlled_motor2 = motor2_pid.control_speed(req_rpm.motor2 , motor2_encoder.read(), deltaT);
     float controlled_motor3 = motor3_pid.control_speed(req_rpm.motor3 , motor3_encoder.read(), deltaT);
     float controlled_motor4 = motor4_pid.control_speed(req_rpm.motor4 , motor4_encoder.read(), deltaT);
-    if (req_rpm.motor1 == 0){
+    if (req_rpm.motor1 == 0 && req_rpm.motor2 == 0 && req_rpm.motor3 == 0 && req_rpm.motor4 == 0 ){
         controlled_motor1 = 0;
         controlled_motor2 = 0;
         controlled_motor3 = 0;
@@ -290,7 +354,11 @@ void moveBase()
     motor2_controller.spin(controlled_motor2);
     motor3_controller.spin(controlled_motor3);
     motor4_controller.spin(controlled_motor4);
-    checking_output_msg.data = req_rpm.motor1;
+    checking_output_msg.data.data[0] = req_rpm.motor1;
+    checking_output_msg.data.data[1] = req_rpm.motor2;
+    checking_output_msg.data.data[2] = req_rpm.motor3;
+    checking_output_msg.data.data[3] = req_rpm.motor4;
+    
     RCSOFTCHECK(rcl_publish(&checking_output_publisher, &checking_output_msg, NULL));
 
     Kinematics::velocities current_vel = kinematics.getVelocities(
