@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <motor_interface.h>
 
-class BTS7960: public MotorInterface
+class Motor: public MotorInterface
 {
     private:
         int in_a_pin_;
@@ -21,7 +21,7 @@ class BTS7960: public MotorInterface
         }
 
     public:
-        BTS7960(float pwm_frequency, int pwm_bits, bool invert, int unused, int in_a_pin, int in_b_pin): 
+        Motor(float pwm_frequency, int pwm_bits, bool invert, int unused, int in_a_pin, int in_b_pin): 
             MotorInterface(invert),
             in_a_pin_(in_a_pin),
             in_b_pin_(in_b_pin)
@@ -42,7 +42,7 @@ class BTS7960: public MotorInterface
             analogWrite(in_b_pin_, 0);
         }
     
-        BTS7960(float pwm_frequency, int pwm_bits, bool invert, int in_a_pin, int in_b_pin): 
+        Motor(float pwm_frequency, int pwm_bits, bool invert, int in_a_pin, int in_b_pin): 
             MotorInterface(invert),
             in_a_pin_(in_a_pin),
             in_b_pin_(in_b_pin)

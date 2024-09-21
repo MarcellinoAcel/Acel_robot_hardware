@@ -44,37 +44,10 @@ Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float a
     //convert rad/s to rad/min
     float tangential_vel_mins = tangential_vel * 60.0;
 
-    float x_rpm = linear_vel_x_mins / wheel_circumference_;
-    float y_rpm = linear_vel_y_mins / wheel_circumference_;
-    float tan_rpm = tangential_vel_mins / wheel_circumference_;
-
-    float a_x_rpm = fabs(x_rpm);
-    float a_y_rpm = fabs(y_rpm);
-    float a_tan_rpm = fabs(tan_rpm);
-
-    float xy_sum = a_x_rpm + a_y_rpm;
-    float xtan_sum = a_x_rpm + a_tan_rpm;
-
-    //calculate the scale value how much each target velocity
-    //must be scaled down in such cases where the total required RPM
-    //is more than the motor's max RPM
-    //this is to ensure that the required motion is achieved just with slower speed
-    if(xy_sum >= max_rpm_ && angular_z == 0)
-    {
-        float vel_scaler = max_rpm_ / xy_sum;
-
-        x_rpm *= vel_scaler;
-        y_rpm *= vel_scaler;
-    }
+    float x_rpm = linear_vel_x_mins ;
+    float y_rpm = linear_vel_y_mins ;
+    float tan_rpm = tangential_vel_mins ;
     
-    else if(xtan_sum >= max_rpm_ && linear_y == 0)
-    {
-        float vel_scaler = max_rpm_ / xtan_sum;
-
-        x_rpm *= vel_scaler;
-        tan_rpm *= vel_scaler;
-    }
-
     Kinematics::rpm rpm;
 
     //calculate for the target motor RPM and direction

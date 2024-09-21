@@ -17,9 +17,6 @@
 
 //include IMU base interface
 #include "imu_interface.h"
-#include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BNO055.h>
 #include <geometry_msgs/msg/vector3.h>
 #include "imu_interface.h"
 //include sensor API headers
@@ -31,6 +28,9 @@
 #include "MPU9150.h"
 #include "MPU9250.h"
 
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
 class BNO055_IMU : public IMUInterface
 {
     Adafruit_BNO055 bno;

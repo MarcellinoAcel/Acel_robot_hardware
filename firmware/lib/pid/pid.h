@@ -69,7 +69,6 @@ public:
     float u = KP * error + KI * error_integral + KD * error_derivative;
     return fmax(min_val_, fmin(u, max_val_));
   }
-
   float control_default(float target, float curr, float deltaT){
     float error = target - curr;
     

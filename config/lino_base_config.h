@@ -158,6 +158,10 @@ LEFT  = Y
   #define MOTOR1_PWM -1 //DON'T TOUCH THIS! This is just a placeholder
   #define MOTOR1_IN_A 3
   #define MOTOR1_IN_B 4
+
+  const int cw[4] = {18,5,22,3};
+  const int ccw[4]= {19,6,23,4};
+
   /*
   1 = 18, 19
   2 = 5,  6

@@ -12,27 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include <Arduino.h>
-#include <micro_ros_platformio.h>
 #include <stdio.h>
 
+#include <micro_ros_platformio.h>
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
-
 #include <nav_msgs/msg/odometry.h>
 #include <sensor_msgs/msg/imu.h>
 #include <geometry_msgs/msg/twist.h>
 #include <geometry_msgs/msg/vector3.h>
 #include <std_msgs/msg/float32_multi_array.h>
+#include "odometry.h"
+#include "imu.h"
 
 #include "config.h"
-// #include "motor.h"
 #include "motor_control.h"
 #include "kinematics.h"
 #include "pid.h"
-#include "odometry.h"
-#include "imu.h"
 #define ENCODER_USE_INTERRUPTS
 #define ENCODER_OPTIMIZE_INTERRUPTS
 #include "encoder.h"
@@ -116,10 +114,10 @@ Encoder motor2_encoder(MOTOR2_ENCODER_A, MOTOR2_ENCODER_B, COUNTS_PER_REV2, MOTO
 Encoder motor3_encoder(MOTOR3_ENCODER_A, MOTOR3_ENCODER_B, COUNTS_PER_REV3, MOTOR3_ENCODER_INV);
 Encoder motor4_encoder(MOTOR4_ENCODER_A, MOTOR4_ENCODER_B, COUNTS_PER_REV4, MOTOR4_ENCODER_INV);
 
-BTS7960 motor1_controller(PWM_FREQUENCY, PWM_BITS, MOTOR1_INV, MOTOR1_PWM, MOTOR1_IN_B, MOTOR1_IN_A);
-BTS7960 motor2_controller(PWM_FREQUENCY, PWM_BITS, MOTOR2_INV, MOTOR2_PWM, MOTOR2_IN_B, MOTOR2_IN_A);
-BTS7960 motor3_controller(PWM_FREQUENCY, PWM_BITS, MOTOR3_INV, MOTOR3_PWM, MOTOR3_IN_B, MOTOR3_IN_A);
-BTS7960 motor4_controller(PWM_FREQUENCY, PWM_BITS, MOTOR4_INV, MOTOR4_PWM, MOTOR4_IN_B, MOTOR4_IN_A);
+// Motor motor1_controller(PWM_FREQUENCY, PWM_BITS, MOTOR1_INV, MOTOR1_PWM, MOTOR1_IN_B, MOTOR1_IN_A);
+// Motor motor2_controller(PWM_FREQUENCY, PWM_BITS, MOTOR2_INV, MOTOR2_PWM, MOTOR2_IN_B, MOTOR2_IN_A);
+// Motor motor3_controller(PWM_FREQUENCY, PWM_BITS, MOTOR3_INV, MOTOR3_PWM, MOTOR3_IN_B, MOTOR3_IN_A);
+// Motor motor4_controller(PWM_FREQUENCY, PWM_BITS, MOTOR4_INV, MOTOR4_PWM, MOTOR4_IN_B, MOTOR4_IN_A);
 
 PID motor1_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
 PID motor2_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
@@ -151,12 +149,15 @@ void setup()
     
     Serial.begin(115200);
     set_microros_serial_transports(Serial);
-    radio.begin();
-    radio.openReadingPipe(1, address); // Buka saluran untuk membaca dari alamat pengirim
-    radio.setPALevel(RF24_PA_HIGH);
-    radio.setDataRate(RF24_250KBPS);
-    radio.setChannel(1);
-    radio.startListening(); 
+    for (int i = 0; i < 5; i++) {
+        pinMode(cw[i], OUTPUT);
+        pinMode(ccw[i], OUTPUT);
+        analogWriteFrequency(cw[i], PWM_FREQUENCY);
+        analogWriteFrequency(ccw[i], PWM_FREQUENCY);
+        analogWriteResolution(PWM_BITS);
+        analogWrite(cw[i], 0);
+        analogWrite(ccw[i], 0);
+    }
 }
 
 bool createEntities()
@@ -213,7 +214,18 @@ bool createEntities()
 
     return true;
 }
-
+void setMotor(int cwPin, int ccwPin, float pwmVal) {
+    if (pwmVal > 0) {
+        analogWrite(cwPin, fabs(pwmVal));
+        analogWrite(ccwPin, 0);
+    } else if (pwmVal < 0) {
+        analogWrite(cwPin, 0);
+        analogWrite(ccwPin, fabs(pwmVal));
+    } else {
+        analogWrite(cwPin, 0);
+        analogWrite(ccwPin, 0);
+    }
+}
 void loop() {
     switch (state) 
     {
@@ -276,11 +288,15 @@ void fullStop()
     twist_msg.linear.x = 0.0;
     twist_msg.linear.y = 0.0;
     twist_msg.angular.z = 0.0;
-
-    motor1_controller.brake();
-    motor2_controller.brake();
-    motor3_controller.brake();
-    motor4_controller.brake();
+    
+    setMotor(cw[0],ccw[0],0);
+    setMotor(cw[1],ccw[1],0);
+    setMotor(cw[2],ccw[2],0);
+    setMotor(cw[3],ccw[3],0);
+    // motor1_controller.brake();
+    // motor2_controller.brake();
+    // motor3_controller.brake();
+    // motor4_controller.brake();
 }
 float prevT  = 0;
 float deltaT = 0;
@@ -289,18 +305,7 @@ float joyY_left = 0;
 float joyX_left = 0;
 float joyY_right = 0;
 float joyX_right = 0;
-void moveBase()
-{   
-    if (radio.available()) {
-        Data data;
-        radio.read(&data, sizeof(data));
-
-        float joyY_left = data.x1;
-        float joyX_left = data.y1;
-        float joyY_right = data.x2;
-        float joyX_right = data.y2;
-    }
-    // float joy_x = map(data.x, 0, 1023)
+void moveBase(){
     sensors_event_t angVelocityData;
     bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
     float currT = micros();
@@ -317,20 +322,11 @@ void moveBase()
     }
     // get the required rpm for each motor based on required velocities, and base used
     Kinematics::rpm req_rpm;
-    if(automatic){
-        req_rpm = kinematics.getRPM(
-            twist_msg.linear.x, 
-            twist_msg.linear.y, 
-            twist_msg.angular.z
-        );
-    }else{
-        req_rpm = kinematics.getRPM(
-            joyX_left, 
-            joyY_left, 
-            joyY_right
-        );
-    }
-    // Kinematics::rpm req_rpm 
+    req_rpm = kinematics.getRPM(
+        twist_msg.linear.x, 
+        twist_msg.linear.y, 
+        twist_msg.angular.z
+    ); 
 
     // get the current speed of each motor
     float current_rpm1 = motor1_encoder.getRPM();
@@ -350,10 +346,11 @@ void moveBase()
         controlled_motor3 = 0;
         controlled_motor4 = 0;
     } 
-    motor1_controller.spin(controlled_motor1);
-    motor2_controller.spin(controlled_motor2);
-    motor3_controller.spin(controlled_motor3);
-    motor4_controller.spin(controlled_motor4);
+    setMotor(cw[0],ccw[0],controlled_motor1);
+    setMotor(cw[1],ccw[1],controlled_motor2);
+    setMotor(cw[2],ccw[2],controlled_motor3);
+    setMotor(cw[3],ccw[3],controlled_motor4);
+
     checking_output_msg.data.data[0] = req_rpm.motor1;
     checking_output_msg.data.data[1] = req_rpm.motor2;
     checking_output_msg.data.data[2] = req_rpm.motor3;

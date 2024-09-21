@@ -17,7 +17,8 @@
                 "/home/marcel/arduino/arduino-1.8.19/libraries/WiFi/src/**",
                 "/home/marcel/Arduino/libraries/Servo/src/**",
                 "/home/marcel/arduino/arduino-1.8.19/hardware/arduino/avr/libraries/Wire/src/**",
-                "/home/marcel/arduino/arduino-1.8.19/hardware/teensy/avr/cores/teensy4/**"
+                "/home/marcel/arduino/arduino-1.8.19/hardware/teensy/avr/cores/teensy4/**",
+                "/home/marcel/.platformio/packages/framework-arduinoteensy/libraries/SPI/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
