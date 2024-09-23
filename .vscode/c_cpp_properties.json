@@ -10,7 +10,7 @@
                 "/home/marcel/Acel_robot_hardware/firmware/lib/imu/**",
                 "/home/marcel/Acel_robot_hardware/firmware/lib/kinematics/**",
                 "/home/marcel/Acel_robot_hardware/firmware/lib/motor/**",
-                "/home/marcel/Acel_robot_hardware/firmware/lib/odometry",
+                "/home/marcel/Acel_robot_hardware/firmware/lib/odometry/**",
                 "/home/marcel/Acel_robot_hardware/firmware/lib/pid/**",
                 "/home/marcel/Acel_robot_hardware/firmware/lib/**",
                 "/home/marcel/arduino/arduino-1.8.19/hardware/teensy/avr/cores/teensy4/**",

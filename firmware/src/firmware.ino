@@ -1,16 +1,3 @@
-// Copyright (c) 2021 Juan Miguel Jimeno
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 #include <Arduino.h>
 #include <stdio.h>
 
@@ -33,43 +20,16 @@
 #include "pid.h"
 #define ENCODER_USE_INTERRUPTS
 #define ENCODER_OPTIMIZE_INTERRUPTS
-#include "encoder.h"
+// #include "encoder.h"
 
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 
-#include <nRF24L01.h>
-#include <RF24.h>
-#include <RF24_config.h>
-
-
-RF24 radio(28, 29); // CE, CSN
-
-byte address[6] = "12345"; // Alamat pengirim
-
 const int motorPWM = 6;
 const int motorCW = 7;
 const int motorCCW = 8;
-
-struct Data {
-  float x1;
-  float y1;
-  
-  float x2;
-  float y2;
-  
-  bool L_but1;
-  bool L_but2;
-  bool L_but3;
-  bool L_but4;
-
-  bool R_but1;
-  bool R_but2;
-  bool R_but3;
-  bool R_but4;
-};
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire2);
 
@@ -109,10 +69,16 @@ enum states
   AGENT_DISCONNECTED
 } state;
 
-Encoder motor1_encoder(MOTOR1_ENCODER_A, MOTOR1_ENCODER_B, COUNTS_PER_REV1, MOTOR1_ENCODER_INV);
-Encoder motor2_encoder(MOTOR2_ENCODER_A, MOTOR2_ENCODER_B, COUNTS_PER_REV2, MOTOR2_ENCODER_INV);
-Encoder motor3_encoder(MOTOR3_ENCODER_A, MOTOR3_ENCODER_B, COUNTS_PER_REV3, MOTOR3_ENCODER_INV);
-Encoder motor4_encoder(MOTOR4_ENCODER_A, MOTOR4_ENCODER_B, COUNTS_PER_REV4, MOTOR4_ENCODER_INV);
+// Encoder motor1_encoder(MOTOR1_ENCODER_A, MOTOR1_ENCODER_B, COUNTS_PER_REV1, MOTOR1_ENCODER_INV);
+// Encoder motor2_encoder(MOTOR2_ENCODER_A, MOTOR2_ENCODER_B, COUNTS_PER_REV2, MOTOR2_ENCODER_INV);
+// Encoder motor3_encoder(MOTOR3_ENCODER_A, MOTOR3_ENCODER_B, COUNTS_PER_REV3, MOTOR3_ENCODER_INV);
+// Encoder motor4_encoder(MOTOR4_ENCODER_A, MOTOR4_ENCODER_B, COUNTS_PER_REV4, MOTOR4_ENCODER_INV);
+
+
+const int enca[4] = { 14, 28, 17, 26 };
+const int encb[4] = { 15, 29, 16, 27 };
+
+volatile long posi[4] = { 0, 0, 0, 0 };
 
 PID motor1_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
 PID motor2_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
@@ -144,7 +110,7 @@ void setup()
     
     Serial.begin(115200);
     set_microros_serial_transports(Serial);
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 4; i++) {
         pinMode(cw[i], OUTPUT);
         pinMode(ccw[i], OUTPUT);
         analogWriteFrequency(cw[i], PWM_FREQUENCY);
@@ -152,7 +118,22 @@ void setup()
         analogWriteResolution(PWM_BITS);
         analogWrite(cw[i], 0);
         analogWrite(ccw[i], 0);
+        pinMode(enca[i], INPUT);
+        pinMode(encb[i], INPUT);
     }
+    attachInterrupt(digitalPinToInterrupt(enca[0]), readEncoder<0>, RISING);
+    attachInterrupt(digitalPinToInterrupt(enca[1]), readEncoder<1>, RISING);
+    attachInterrupt(digitalPinToInterrupt(enca[2]), readEncoder<2>, RISING);
+    attachInterrupt(digitalPinToInterrupt(enca[3]), readEncoder<3>, RISING);
+}
+template<int j>
+void readEncoder() {
+  int b = digitalRead(encb[j]);
+  if (b > 0) {
+    posi[j]++;
+  } else {
+    posi[j]--;
+  }
 }
 
 bool createEntities()
@@ -291,11 +272,6 @@ void fullStop()
 }
 float prevT  = 0;
 float deltaT = 0;
-int automatic = 0;
-float joyY_left = 0;
-float joyX_left = 0;
-float joyY_right = 0;
-float joyX_right = 0;
 void moveBase(){
     sensors_event_t angVelocityData;
     bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
@@ -320,17 +296,17 @@ void moveBase(){
     ); 
 
     // get the current speed of each motor
-    float current_rpm1 = motor1_encoder.getRPM();
-    float current_rpm2 = motor2_encoder.getRPM();
-    float current_rpm3 = motor3_encoder.getRPM();
-    float current_rpm4 = motor4_encoder.getRPM();
+    float current_rpm1 = motor1_pid.getPureVal();
+    float current_rpm2 = motor2_pid.getPureVal();
+    float current_rpm3 = motor3_pid.getPureVal();
+    float current_rpm4 = motor4_pid.getPureVal();
 
     // the required rpm is capped at -/+ MAX_RPM to prevent the PID from having too much error
     // the PWM value sent to the motor driver is the calculated PID based on required RPM vs measured RPM
-    float controlled_motor1 = motor1_pid.control_speed(req_rpm.motor1 , motor1_encoder.read(), deltaT);
-    float controlled_motor2 = motor2_pid.control_speed(req_rpm.motor2 , motor2_encoder.read(), deltaT);
-    float controlled_motor3 = motor3_pid.control_speed(req_rpm.motor3 , motor3_encoder.read(), deltaT);
-    float controlled_motor4 = motor4_pid.control_speed(req_rpm.motor4 , motor4_encoder.read(), deltaT);
+    float controlled_motor1 = motor1_pid.control_speed(req_rpm.motor1 , posi[0], deltaT);
+    float controlled_motor2 = motor2_pid.control_speed(req_rpm.motor2 , posi[1], deltaT);
+    float controlled_motor3 = motor3_pid.control_speed(req_rpm.motor3 , posi[2], deltaT);
+    float controlled_motor4 = motor4_pid.control_speed(req_rpm.motor4 , posi[3], deltaT);
     if (req_rpm.motor1 == 0 && req_rpm.motor2 == 0 && req_rpm.motor3 == 0 && req_rpm.motor4 == 0 ){
         controlled_motor1 = 0;
         controlled_motor2 = 0;
