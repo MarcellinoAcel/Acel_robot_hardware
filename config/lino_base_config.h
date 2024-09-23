@@ -67,10 +67,10 @@ LEFT  = Y
 #define COUNTS_PER_REV2 3840                // wheel2 encoder's no of ticks per rev
 #define COUNTS_PER_REV3 3840                // wheel3 encoder's no of ticks per rev
 #define COUNTS_PER_REV4 3840                // wheel4 encoder's no of ticks per rev
-#define WHEEL_DIAMETER 0.1                 // wheel's diameter in meters
+#define WHEEL_DIAMETER 0.1                  // wheel's diameter in meters
 #define ROBOT_DIAMETER 0.5                  // distance between left and right wheels
 #define ROBOT_RADIUS 0.05
-#define PWM_BITS 10                         // PWM Resolution of the microcontroller
+#define PWM_BITS 8                          // PWM Resolution of the microcontroller
 #define PWM_FREQUENCY 20000                 // PWM Frequency
 
 // INVERT ENCODER COUNTS
@@ -169,7 +169,7 @@ LEFT  = Y
   4 = 3,  4
   */
   // const int pwm[4] ={-1,-1,-1,-1};
-  #define PWM_MAX 255
+  #define PWM_MAX  pow(2, PWM_BITS) - 1
   #define PWM_MIN -PWM_MAX
 #endif
 

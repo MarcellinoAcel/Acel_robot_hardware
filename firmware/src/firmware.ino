@@ -114,11 +114,6 @@ Encoder motor2_encoder(MOTOR2_ENCODER_A, MOTOR2_ENCODER_B, COUNTS_PER_REV2, MOTO
 Encoder motor3_encoder(MOTOR3_ENCODER_A, MOTOR3_ENCODER_B, COUNTS_PER_REV3, MOTOR3_ENCODER_INV);
 Encoder motor4_encoder(MOTOR4_ENCODER_A, MOTOR4_ENCODER_B, COUNTS_PER_REV4, MOTOR4_ENCODER_INV);
 
-// Motor motor1_controller(PWM_FREQUENCY, PWM_BITS, MOTOR1_INV, MOTOR1_PWM, MOTOR1_IN_B, MOTOR1_IN_A);
-// Motor motor2_controller(PWM_FREQUENCY, PWM_BITS, MOTOR2_INV, MOTOR2_PWM, MOTOR2_IN_B, MOTOR2_IN_A);
-// Motor motor3_controller(PWM_FREQUENCY, PWM_BITS, MOTOR3_INV, MOTOR3_PWM, MOTOR3_IN_B, MOTOR3_IN_A);
-// Motor motor4_controller(PWM_FREQUENCY, PWM_BITS, MOTOR4_INV, MOTOR4_PWM, MOTOR4_IN_B, MOTOR4_IN_A);
-
 PID motor1_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
 PID motor2_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
 PID motor3_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
@@ -293,10 +288,6 @@ void fullStop()
     setMotor(cw[1],ccw[1],0);
     setMotor(cw[2],ccw[2],0);
     setMotor(cw[3],ccw[3],0);
-    // motor1_controller.brake();
-    // motor2_controller.brake();
-    // motor3_controller.brake();
-    // motor4_controller.brake();
 }
 float prevT  = 0;
 float deltaT = 0;

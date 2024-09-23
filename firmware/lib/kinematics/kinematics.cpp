@@ -39,10 +39,10 @@ Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float a
     float tangential_vel = angular_z;
 
     //convert m/s to m/min
-    float linear_vel_x_mins = linear_x * 60.0;
-    float linear_vel_y_mins = linear_y * 60.0;
+    float linear_vel_x_mins = linear_x ;
+    float linear_vel_y_mins = linear_y ;
     //convert rad/s to rad/min
-    float tangential_vel_mins = tangential_vel * 60.0;
+    float tangential_vel_mins = tangential_vel ;
 
     float x_rpm = linear_vel_x_mins ;
     float y_rpm = linear_vel_y_mins ;
@@ -83,15 +83,15 @@ Kinematics::velocities Kinematics::getVelocities(float rpm1, float rpm2, float r
     float average_rps_a;
 
     //convert average revolutions per minute to revolutions per second
-    average_rps_x = ((float)(-sin(toRad(45)) * rpm1 + -sin(toRad(135)) * rpm2 + -sin(toRad(225)) * rpm3 + -sin(toRad(315)) * rpm4) / total_wheels_) / 60.0; // RPM
+    average_rps_x = ((float)(-sin(toRad(45)) * rpm1 + -sin(toRad(135)) * rpm2 + -sin(toRad(225)) * rpm3 + -sin(toRad(315)) * rpm4) / total_wheels_); // RPM
     vel.linear_x = average_rps_x * wheel_circumference_; // m/s
 
     //convert average revolutions per minute in y axis to revolutions per second
-    average_rps_y = ((float)(cos(toRad(45)) * rpm1 + cos(toRad(135)) * rpm2 + cos(toRad(225)) * rpm3 + cos(toRad(315)) * rpm4) / total_wheels_) / 60.0; // RPM
+    average_rps_y = ((float)(cos(toRad(45)) * rpm1 + cos(toRad(135)) * rpm2 + cos(toRad(225)) * rpm3 + cos(toRad(315)) * rpm4) / total_wheels_); // RPM
     vel.linear_y = average_rps_y * wheel_circumference_; // m/s
 
     //convert average revolutions per minute to revolutions per second
-    average_rps_a = ((float)(-rpm1 + rpm2 - rpm3 + rpm4) / total_wheels_) / 60.0;
+    average_rps_a = ((float)(-rpm1 + rpm2 - rpm3 + rpm4) / total_wheels_);
     vel.angular_z =  (average_rps_a * wheel_circumference_) / (robot_circumference_); //  rad/s
 
     return vel;
