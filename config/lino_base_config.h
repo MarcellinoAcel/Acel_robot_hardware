@@ -58,8 +58,8 @@ LEFT  = Y
 */
 
 //define your robot' specs here
-#define MOTOR_MAX_RPM 550                   // motor's max RPM          
-#define MAX_RPM_RATIO 0.85                  // max RPM allowed for each MAX_RPM_ALLOWED = MOTOR_MAX_RPM * MAX_RPM_RATIO          
+#define MOTOR_MAX_RPS 8.4                   // motor's max RPM          
+#define MAX_RPS_RATIO 0.85                  // max RPM allowed for each MAX_RPM_ALLOWED = MOTOR_MAX_RPM * MAX_RPM_RATIO          
 #define MOTOR_OPERATING_VOLTAGE 24          // motor's operating voltage (used to calculate max RPM)
 #define MOTOR_POWER_MAX_VOLTAGE 23.5        // max voltage of the motor's power source (used to calculate max RPM)
 #define MOTOR_POWER_MEASURED_VOLTAGE 24     // current voltage reading of the power connected to the motor (used for calibration)

@@ -69,12 +69,6 @@ enum states
   AGENT_DISCONNECTED
 } state;
 
-// Encoder motor1_encoder(MOTOR1_ENCODER_A, MOTOR1_ENCODER_B, COUNTS_PER_REV1, MOTOR1_ENCODER_INV);
-// Encoder motor2_encoder(MOTOR2_ENCODER_A, MOTOR2_ENCODER_B, COUNTS_PER_REV2, MOTOR2_ENCODER_INV);
-// Encoder motor3_encoder(MOTOR3_ENCODER_A, MOTOR3_ENCODER_B, COUNTS_PER_REV3, MOTOR3_ENCODER_INV);
-// Encoder motor4_encoder(MOTOR4_ENCODER_A, MOTOR4_ENCODER_B, COUNTS_PER_REV4, MOTOR4_ENCODER_INV);
-
-
 const int enca[4] = { 14, 28, 17, 26 };
 const int encb[4] = { 15, 29, 16, 27 };
 
@@ -87,8 +81,8 @@ PID motor4_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
 
 Kinematics kinematics(
     Kinematics::LINO_BASE, 
-    MOTOR_MAX_RPM, 
-    MAX_RPM_RATIO, 
+    MOTOR_MAX_RPS, 
+    MAX_RPS_RATIO, 
     MOTOR_OPERATING_VOLTAGE, 
     MOTOR_POWER_MAX_VOLTAGE, 
     WHEEL_DIAMETER, 
@@ -246,11 +240,11 @@ bool destroyEntities()
     rmw_context_t * rmw_context = rcl_context_get_rmw_context(&support.context);
     (void) rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
 
-    rcl_publisher_fini(&odom_publisher, &node);
-    rcl_publisher_fini(&imu_publisher, &node);
-    rcl_subscription_fini(&twist_subscriber, &node);
-    rcl_node_fini(&node);
-    rcl_timer_fini(&control_timer);
+    // rcl_publisher_fini(&odom_publisher, &node);
+    // rcl_publisher_fini(&imu_publisher, &node);
+    // rcl_subscription_fini(&twist_subscriber, &node);
+    // rcl_node_fini(&node);
+    // rcl_timer_fini(&control_timer);
     rclc_executor_fini(&executor);
     rclc_support_fini(&support);
 
@@ -287,27 +281,27 @@ void moveBase(){
 
         digitalWrite(LED_PIN, HIGH);
     }
-    // get the required rpm for each motor based on required velocities, and base used
-    Kinematics::rpm req_rpm;
-    req_rpm = kinematics.getRPM(
+    // get the required rps for each motor based on required velocities, and base used
+    Kinematics::rps req_rps;
+    req_rps = kinematics.getRPS(
         twist_msg.linear.x, 
         twist_msg.linear.y, 
         twist_msg.angular.z
     ); 
 
     // get the current speed of each motor
-    float current_rpm1 = motor1_pid.getPureVal();
-    float current_rpm2 = motor2_pid.getPureVal();
-    float current_rpm3 = motor3_pid.getPureVal();
-    float current_rpm4 = motor4_pid.getPureVal();
+    float current_rps1 = motor1_pid.getPureVal();
+    float current_rps2 = motor2_pid.getPureVal();
+    float current_rps3 = motor3_pid.getPureVal();
+    float current_rps4 = motor4_pid.getPureVal();
 
-    // the required rpm is capped at -/+ MAX_RPM to prevent the PID from having too much error
-    // the PWM value sent to the motor driver is the calculated PID based on required RPM vs measured RPM
-    float controlled_motor1 = motor1_pid.control_speed(req_rpm.motor1 , posi[0], deltaT);
-    float controlled_motor2 = motor2_pid.control_speed(req_rpm.motor2 , posi[1], deltaT);
-    float controlled_motor3 = motor3_pid.control_speed(req_rpm.motor3 , posi[2], deltaT);
-    float controlled_motor4 = motor4_pid.control_speed(req_rpm.motor4 , posi[3], deltaT);
-    if (req_rpm.motor1 == 0 && req_rpm.motor2 == 0 && req_rpm.motor3 == 0 && req_rpm.motor4 == 0 ){
+    // the required rps is capped at -/+ MAX_rps to prevent the PID from having too much error
+    // the PWM value sent to the motor driver is the calculated PID based on required rps vs measured rps
+    float controlled_motor1 = motor1_pid.control_speed(req_rps.motor1, posi[0], deltaT);
+    float controlled_motor2 = motor2_pid.control_speed(req_rps.motor2, posi[1], deltaT);
+    float controlled_motor3 = motor3_pid.control_speed(req_rps.motor3, posi[2], deltaT);
+    float controlled_motor4 = motor4_pid.control_speed(req_rps.motor4, posi[3], deltaT);
+    if (req_rps.motor1 == 0 && req_rps.motor2 == 0 && req_rps.motor3 == 0 && req_rps.motor4 == 0 ){
         controlled_motor1 = 0;
         controlled_motor2 = 0;
         controlled_motor3 = 0;
@@ -318,18 +312,18 @@ void moveBase(){
     setMotor(cw[2],ccw[2],controlled_motor3);
     setMotor(cw[3],ccw[3],controlled_motor4);
 
-    checking_output_msg.data.data[0] = req_rpm.motor1;
-    checking_output_msg.data.data[1] = req_rpm.motor2;
-    checking_output_msg.data.data[2] = req_rpm.motor3;
-    checking_output_msg.data.data[3] = req_rpm.motor4;
+    checking_output_msg.data.data[0] = req_rps.motor1;
+    checking_output_msg.data.data[1] = req_rps.motor2;
+    checking_output_msg.data.data[2] = req_rps.motor3;
+    checking_output_msg.data.data[3] = req_rps.motor4;
     
     RCSOFTCHECK(rcl_publish(&checking_output_publisher, &checking_output_msg, NULL));
 
     Kinematics::velocities current_vel = kinematics.getVelocities(
-        current_rpm1, 
-        current_rpm2, 
-        current_rpm3, 
-        current_rpm4
+        current_rps1, 
+        current_rps2, 
+        current_rps3, 
+        current_rps4
     );
 
     unsigned long now = millis();

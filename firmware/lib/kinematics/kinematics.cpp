@@ -20,7 +20,7 @@ float toRad(float deg){
     return deg * M_PI/180;
 }
 
-Kinematics::Kinematics(base robot_base, int motor_max_rpm, float max_rpm_ratio,
+Kinematics::Kinematics(base robot_base, int motor_max_rps, float max_rps_ratio,
                        float motor_operating_voltage, float motor_power_max_voltage,
                        float wheel_diameter, float wheels_y_distance):
     base_platform_(robot_base),
@@ -29,10 +29,10 @@ Kinematics::Kinematics(base robot_base, int motor_max_rpm, float max_rpm_ratio,
     total_wheels_(getTotalWheels(robot_base))
 {    
     motor_power_max_voltage = constrain(motor_power_max_voltage, 0, motor_operating_voltage);
-    max_rpm_ =  ((motor_power_max_voltage / motor_operating_voltage) * motor_max_rpm) * max_rpm_ratio;
+    max_rps_ =  ((motor_power_max_voltage / motor_operating_voltage) * motor_max_rps) * max_rps_ratio;
 }
 
-Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float angular_z)
+Kinematics::rps Kinematics::calculateRPS(float linear_x, float linear_y, float angular_z)
 {
 
     // float tangential_vel = angular_z * (robot_circumference_);
@@ -44,38 +44,38 @@ Kinematics::rpm Kinematics::calculateRPM(float linear_x, float linear_y, float a
     //convert rad/s to rad/min
     float tangential_vel_mins = tangential_vel ;
 
-    float x_rpm = linear_vel_x_mins ;
-    float y_rpm = linear_vel_y_mins ;
-    float tan_rpm = tangential_vel_mins ;
+    float x_rps = linear_vel_x_mins ;
+    float y_rps = linear_vel_y_mins ;
+    float tan_rps = tangential_vel_mins ;
     
-    Kinematics::rpm rpm;
+    Kinematics::rps rps;
 
-    //calculate for the target motor RPM and direction
+    //calculate for the target motor rps and direction
     //front-left motor
-    float rpm_motor1 = -sin(toRad(45 )) * x_rpm + cos(toRad(45 )) * y_rpm + robot_circumference_ * tan_rpm;
-    rpm.motor1 = fmax(-max_rpm_,fmin(rpm_motor1,max_rpm_));
+    float rps_motor1 = -sin(toRad(45 )) * x_rps + cos(toRad(45 )) * y_rps + robot_circumference_ * tan_rps;
+    rps.motor1 = fmax(-max_rps_,fmin(rps_motor1,max_rps_));
 
     //front-right motor
-    float rpm_motor2 = -sin(toRad(135)) * x_rpm + cos(toRad(135)) * y_rpm + robot_circumference_ * tan_rpm;
-    rpm.motor2 = fmax(-max_rpm_,fmin(rpm_motor2,max_rpm_));
+    float rps_motor2 = -sin(toRad(135)) * x_rps + cos(toRad(135)) * y_rps + robot_circumference_ * tan_rps;
+    rps.motor2 = fmax(-max_rps_,fmin(rps_motor2,max_rps_));
 
     //rear-left motor
-    float rpm_motor3 = -sin(toRad(225)) * x_rpm + cos(toRad(225)) * y_rpm + robot_circumference_ * tan_rpm;
-    rpm.motor3 = fmax(-max_rpm_,fmin(rpm_motor3,max_rpm_));
+    float rps_motor3 = -sin(toRad(225)) * x_rps + cos(toRad(225)) * y_rps + robot_circumference_ * tan_rps;
+    rps.motor3 = fmax(-max_rps_,fmin(rps_motor3,max_rps_));
 
     //rear-right motor
-    float rpm_motor4 = -sin(toRad(315)) * x_rpm + cos(toRad(315)) * y_rpm + robot_circumference_ * tan_rpm;
-    rpm.motor4 = fmax(-max_rpm_,fmin(rpm_motor4,max_rpm_));
+    float rps_motor4 = -sin(toRad(315)) * x_rps + cos(toRad(315)) * y_rps + robot_circumference_ * tan_rps;
+    rps.motor4 = fmax(-max_rps_,fmin(rps_motor4,max_rps_));
 
-    return rpm;
+    return rps;
 }
 
-Kinematics::rpm Kinematics::getRPM(float linear_x, float linear_y, float angular_z)
+Kinematics::rps Kinematics::getRPS(float linear_x, float linear_y, float angular_z)
 {
-    return calculateRPM(linear_x, linear_y, angular_z);
+    return calculateRPS(linear_x, linear_y, angular_z);
 }
 
-Kinematics::velocities Kinematics::getVelocities(float rpm1, float rpm2, float rpm3, float rpm4)
+Kinematics::velocities Kinematics::getVelocities(float rps1, float rps2, float rps3, float rps4)
 {
     Kinematics::velocities vel;
     float average_rps_x;
@@ -83,15 +83,15 @@ Kinematics::velocities Kinematics::getVelocities(float rpm1, float rpm2, float r
     float average_rps_a;
 
     //convert average revolutions per minute to revolutions per second
-    average_rps_x = ((float)(-sin(toRad(45)) * rpm1 + -sin(toRad(135)) * rpm2 + -sin(toRad(225)) * rpm3 + -sin(toRad(315)) * rpm4) / total_wheels_); // RPM
+    average_rps_x = ((float)(-sin(toRad(45)) * rps1 + -sin(toRad(135)) * rps2 + -sin(toRad(225)) * rps3 + -sin(toRad(315)) * rps4) / total_wheels_); // rps
     vel.linear_x = average_rps_x * wheel_circumference_; // m/s
 
     //convert average revolutions per minute in y axis to revolutions per second
-    average_rps_y = ((float)(cos(toRad(45)) * rpm1 + cos(toRad(135)) * rpm2 + cos(toRad(225)) * rpm3 + cos(toRad(315)) * rpm4) / total_wheels_); // RPM
+    average_rps_y = ((float)(cos(toRad(45)) * rps1 + cos(toRad(135)) * rps2 + cos(toRad(225)) * rps3 + cos(toRad(315)) * rps4) / total_wheels_); // rps
     vel.linear_y = average_rps_y * wheel_circumference_; // m/s
 
     //convert average revolutions per minute to revolutions per second
-    average_rps_a = ((float)(-rpm1 + rpm2 - rpm3 + rpm4) / total_wheels_);
+    average_rps_a = ((float)(-rps1 + rps2 - rps3 + rps4) / total_wheels_);
     vel.angular_z =  (average_rps_a * wheel_circumference_) / (robot_circumference_); //  rad/s
 
     return vel;
@@ -109,7 +109,7 @@ int Kinematics::getTotalWheels(base robot_base)
     }
 }
 
-float Kinematics::getMaxRPM()
+float Kinematics::getMaxRPS()
 {
-    return max_rpm_;
+    return max_rps_;
 }
