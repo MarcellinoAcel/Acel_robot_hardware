@@ -69,8 +69,8 @@ enum states
   AGENT_DISCONNECTED
 } state;
 
-const int enca[4] = { 14, 28, 17, 26 };
-const int encb[4] = { 15, 29, 16, 27 };
+const int enca[4] = { MOTOR1_ENCODER_A, MOTOR2_ENCODER_A, MOTOR3_ENCODER_A, MOTOR4_ENCODER_A};
+const int encb[4] = { MOTOR1_ENCODER_B, MOTOR2_ENCODER_B, MOTOR3_ENCODER_B, MOTOR4_ENCODER_B};
 
 volatile long posi[4] = { 0, 0, 0, 0 };
 
