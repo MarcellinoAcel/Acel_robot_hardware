@@ -44,12 +44,14 @@ Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire2);
 rcl_publisher_t odom_publisher;
 rcl_publisher_t imu_publisher;
 rcl_subscription_t twist_subscriber;
-rcl_publisher_t checking_output_publisher;
+rcl_publisher_t checking_output_motor;
+rcl_publisher_t checking_input_motor;
 
 nav_msgs__msg__Odometry odom_msg;
 sensor_msgs__msg__Imu imu_msg;
 geometry_msgs__msg__Twist twist_msg;
 std_msgs__msg__Float32MultiArray checking_output_msg;
+std_msgs__msg__Float32MultiArray checking_input_msg;
 
 rclc_executor_t executor;
 rclc_support_t support;
@@ -92,46 +94,8 @@ Kinematics kinematics(
 Odometry odometry;
 IMU imu_sensor;
 
-void setup() 
-{
-    pinMode(LED_PIN, OUTPUT);
 
-    bool imu_ok = imu_sensor.init();
-    if(!imu_ok)
-    {
-        flashLED(3);
-    }
-    
-    Serial.begin(115200);
-    set_microros_serial_transports(Serial);
-    for (int i = 0; i < 4; i++) {
-        pinMode(cw[i], OUTPUT);
-        pinMode(ccw[i], OUTPUT);
-        analogWriteFrequency(cw[i], PWM_FREQUENCY);
-        analogWriteFrequency(ccw[i], PWM_FREQUENCY);
-        analogWriteResolution(PWM_BITS);
-        analogWrite(cw[i], 0);
-        analogWrite(ccw[i], 0);
-        pinMode(enca[i], INPUT);
-        pinMode(encb[i], INPUT);
-    }
-    attachInterrupt(digitalPinToInterrupt(enca[0]), readEncoder<0>, RISING);
-    attachInterrupt(digitalPinToInterrupt(enca[1]), readEncoder<1>, RISING);
-    attachInterrupt(digitalPinToInterrupt(enca[2]), readEncoder<2>, RISING);
-    attachInterrupt(digitalPinToInterrupt(enca[3]), readEncoder<3>, RISING);
-}
-template<int j>
-void readEncoder() {
-  int b = digitalRead(encb[j]);
-  if (b > 0) {
-    posi[j]++;
-  } else {
-    posi[j]--;
-  }
-}
-
-bool createEntities()
-{
+bool createEntities(){
     allocator = rcl_get_default_allocator();
     //create init_options
     RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
@@ -160,13 +124,21 @@ bool createEntities()
     ));
     // create troubleshooting publisher
     RCCHECK(rclc_publisher_init_default( 
-        &checking_output_publisher, 
+        &checking_output_motor, 
         &node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
         "checking_output"
     ));
     checking_output_msg.data.data = (float*)malloc(4 * sizeof(float)); // Sesuaikan jumlah elemen
     checking_output_msg.data.size = 4;
+    RCCHECK(rclc_publisher_init_default( 
+        &checking_input_motor, 
+        &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Float32MultiArray),
+        "checking_input"
+    ));
+    checking_input_msg.data.data = (float*)malloc(4 * sizeof(float)); // Sesuaikan jumlah elemen
+    checking_input_msg.data.size = 4;
     executor = rclc_executor_get_zero_initialized_executor();
     RCCHECK(rclc_executor_init(&executor, &support.context, 2, & allocator));
     RCCHECK(rclc_executor_add_subscription(
@@ -183,6 +155,44 @@ bool createEntities()
     digitalWrite(LED_PIN, HIGH);
 
     return true;
+}
+void setup() 
+{
+    pinMode(LED_PIN, OUTPUT);
+
+    bool imu_ok = imu_sensor.init();
+    if(!imu_ok)
+    {
+        flashLED(3);
+    }
+    
+    Serial.begin(115200);
+    set_microros_serial_transports(Serial);
+    // createEntities();
+    for (int i = 0; i < 4; i++) {
+        pinMode(cw[i], OUTPUT);
+        pinMode(ccw[i], OUTPUT);
+        analogWriteFrequency(cw[i], PWM_FREQUENCY);
+        analogWriteFrequency(ccw[i], PWM_FREQUENCY);
+        analogWriteResolution(PWM_BITS);
+        analogWrite(cw[i], 0);
+        analogWrite(ccw[i], 0);
+        pinMode(enca[i], INPUT);
+        pinMode(encb[i], INPUT);
+    }
+    attachInterrupt(digitalPinToInterrupt(enca[0]), readEncoder<0>, RISING);
+    attachInterrupt(digitalPinToInterrupt(enca[1]), readEncoder<1>, RISING);
+    attachInterrupt(digitalPinToInterrupt(enca[2]), readEncoder<2>, RISING);
+    attachInterrupt(digitalPinToInterrupt(enca[3]), readEncoder<3>, RISING);
+}
+template<int j>
+void readEncoder() {
+  int b = digitalRead(encb[j]);
+  if (b > 0) {
+    posi[j]++;
+  } else {
+    posi[j]--;
+  }
 }
 void setMotor(int cwPin, int ccwPin, float pwmVal) {
     if (pwmVal > 0) {
@@ -240,11 +250,11 @@ bool destroyEntities()
     rmw_context_t * rmw_context = rcl_context_get_rmw_context(&support.context);
     (void) rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
 
-    // rcl_publisher_fini(&odom_publisher, &node);
-    // rcl_publisher_fini(&imu_publisher, &node);
-    // rcl_subscription_fini(&twist_subscriber, &node);
-    // rcl_node_fini(&node);
-    // rcl_timer_fini(&control_timer);
+    rcl_publisher_fini(&odom_publisher, &node);
+    rcl_publisher_fini(&imu_publisher, &node);
+    rcl_subscription_fini(&twist_subscriber, &node);
+    rcl_node_fini(&node);
+    rcl_timer_fini(&control_timer);
     rclc_executor_fini(&executor);
     rclc_support_fini(&support);
 
@@ -307,17 +317,24 @@ void moveBase(){
         controlled_motor3 = 0;
         controlled_motor4 = 0;
     } 
-    setMotor(cw[0],ccw[0],controlled_motor1);
+    setMotor(cw[0],ccw[0],controlled_motor4);
     setMotor(cw[1],ccw[1],controlled_motor2);
     setMotor(cw[2],ccw[2],controlled_motor3);
-    setMotor(cw[3],ccw[3],controlled_motor4);
+    setMotor(cw[3],ccw[3],controlled_motor1);
 
-    checking_output_msg.data.data[0] = req_rps.motor1;
-    checking_output_msg.data.data[1] = req_rps.motor2;
-    checking_output_msg.data.data[2] = req_rps.motor3;
-    checking_output_msg.data.data[3] = req_rps.motor4;
+    checking_output_msg.data.data[0] = motor1_pid.getFilteredVal();//1
+    checking_output_msg.data.data[1] = motor2_pid.getFilteredVal();//2
+    checking_output_msg.data.data[2] = motor3_pid.getFilteredVal();//3
+    checking_output_msg.data.data[3] = motor4_pid.getFilteredVal();//4
+
+    RCSOFTCHECK(rcl_publish(&checking_input_motor, &checking_input_msg, NULL));
+
+    checking_input_msg.data.data[0] = req_rps.motor1;//1
+    checking_input_msg.data.data[1] = req_rps.motor2;//2
+    checking_input_msg.data.data[2] = req_rps.motor3;//3
+    checking_input_msg.data.data[3] = req_rps.motor4;//4
     
-    RCSOFTCHECK(rcl_publish(&checking_output_publisher, &checking_output_msg, NULL));
+    RCSOFTCHECK(rcl_publish(&checking_output_motor, &checking_output_msg, NULL));
 
     Kinematics::velocities current_vel = kinematics.getVelocities(
         current_rps1, 

@@ -35,7 +35,7 @@
 // #define USE_MPU9250_IMU
 #define USE_BNO055_IMU
 
-#define K_P 10
+#define K_P 50
 #define K_I 100
 #define K_D 0
 
@@ -70,8 +70,8 @@ LEFT  = Y
 #define WHEEL_DIAMETER 0.1                  // wheel's diameter in meters
 #define ROBOT_DIAMETER 0.5                  // distance between left and right wheels
 #define ROBOT_RADIUS 0.05
-#define PWM_BITS 8                          // PWM Resolution of the microcontroller
-#define PWM_FREQUENCY 20000                 // PWM Frequency
+#define PWM_BITS 8
+#define PWM_FREQUENCY 20000
 
 // INVERT ENCODER COUNTS
 #define MOTOR1_ENCODER_INV false 
@@ -85,17 +85,17 @@ LEFT  = Y
 #define MOTOR3_INV false
 #define MOTOR4_INV false
 
-#define MOTOR4_ENCODER_A 14
-#define MOTOR4_ENCODER_B 15 
+#define MOTOR1_ENCODER_A 14
+#define MOTOR1_ENCODER_B 15 
 
 #define MOTOR3_ENCODER_A 17
 #define MOTOR3_ENCODER_B 16 
 
-#define MOTOR2_ENCODER_A 11
-#define MOTOR2_ENCODER_B 12 
+#define MOTOR2_ENCODER_A 28
+#define MOTOR2_ENCODER_B 29 
 
-#define MOTOR1_ENCODER_A 9
-#define MOTOR1_ENCODER_B 10
+#define MOTOR4_ENCODER_A 26
+#define MOTOR4_ENCODER_B 27
 
 // MOTOR PINS 
 
@@ -143,9 +143,9 @@ LEFT  = Y
 #endif 
 
 #ifdef USE_BTS7960_MOTOR_DRIVER
-  #define MOTOR4_PWM -1 //DON'T TOUCH THIS! This is just a placeholder
-  #define MOTOR4_IN_A 18 // Pin no 21 is not a PWM pin on Teensy 4.x, you can use pin no 1 instead.
-  #define MOTOR4_IN_B 19 // Pin no 20 is not a PWM pin on Teensy 4.x, you can use pin no 0 instead.
+  #define MOTOR1_PWM -1 //DON'T TOUCH THIS! This is just a placeholder
+  #define MOTOR1_IN_A 18 // Pin no 21 is not a PWM pin on Teensy 4.x, you can use pin no 1 instead.
+  #define MOTOR1_IN_B 19 // Pin no 20 is not a PWM pin on Teensy 4.x, you can use pin no 0 instead.
 
   #define MOTOR3_PWM -1 //DON'T TOUCH THIS! This is just a placeholder
   #define MOTOR3_IN_A 5
@@ -155,14 +155,14 @@ LEFT  = Y
   #define MOTOR2_IN_A 22
   #define MOTOR2_IN_B 23
 
-  #define MOTOR1_PWM -1 //DON'T TOUCH THIS! This is just a placeholder
-  #define MOTOR1_IN_A 3
-  #define MOTOR1_IN_B 4
+  #define MOTOR4_PWM -1 //DON'T TOUCH THIS! This is just a placeholder
+  #define MOTOR4_IN_A 3
+  #define MOTOR4_IN_B 4
 
-  const int cw[4] = {18,5,22,3};
-  const int ccw[4]= {19,6,23,4};
+  const int cw[4] = {MOTOR4_IN_A,MOTOR3_IN_A,MOTOR2_IN_A,MOTOR1_IN_A};
+  const int ccw[4]= {MOTOR4_IN_B,MOTOR3_IN_B,MOTOR2_IN_B,MOTOR1_IN_B};
 
-  /*
+  /*aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaawwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
   1 = 18, 19
   2 = 5,  6
   3 = 22, 23
