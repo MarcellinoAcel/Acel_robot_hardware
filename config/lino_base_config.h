@@ -35,7 +35,7 @@
 // #define USE_MPU9250_IMU
 #define USE_BNO055_IMU
 
-#define K_P 50
+#define K_P 10
 #define K_I 100
 #define K_D 0
 

@@ -295,8 +295,8 @@ void moveBase(){
     Kinematics::rps req_rps;
     req_rps = kinematics.getRPS(
         twist_msg.linear.x, 
-        twist_msg.linear.y, 
-        twist_msg.angular.z
+        twist_msg.linear.y * -1, 
+        twist_msg.angular.z * -1
     ); 
 
     // get the current speed of each motor
