@@ -82,7 +82,7 @@ PID motor3_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
 PID motor4_pid(PWM_MIN, PWM_MAX, K_P, K_I, K_D);
 
 Kinematics kinematics(
-    Kinematics::LINO_BASE, 
+    4, 
     MOTOR_MAX_RPS, 
     MAX_RPS_RATIO, 
     MOTOR_OPERATING_VOLTAGE, 
@@ -295,8 +295,8 @@ void moveBase(){
     Kinematics::rps req_rps;
     req_rps = kinematics.getRPS(
         twist_msg.linear.x, 
-        twist_msg.linear.y * -1, 
-        twist_msg.angular.z * -1
+        twist_msg.linear.y , 
+        twist_msg.angular.z
     ); 
 
     // get the current speed of each motor
@@ -311,21 +311,27 @@ void moveBase(){
     float controlled_motor2 = motor2_pid.control_speed(req_rps.motor2, posi[1], deltaT);
     float controlled_motor3 = motor3_pid.control_speed(req_rps.motor3, posi[2], deltaT);
     float controlled_motor4 = motor4_pid.control_speed(req_rps.motor4, posi[3], deltaT);
-    if (req_rps.motor1 == 0 && req_rps.motor2 == 0 && req_rps.motor3 == 0 && req_rps.motor4 == 0 ){
+    if(fabs(req_rps.motor1) <0.02){
         controlled_motor1 = 0;
+    }
+    if(fabs(req_rps.motor2) <0.02){
         controlled_motor2 = 0;
+    }
+    if(fabs(req_rps.motor3) <0.02){
         controlled_motor3 = 0;
+    }
+    if(fabs(req_rps.motor4) <0.02){
         controlled_motor4 = 0;
-    } 
+    }
     setMotor(cw[0],ccw[0],controlled_motor4);
     setMotor(cw[1],ccw[1],controlled_motor2);
     setMotor(cw[2],ccw[2],controlled_motor3);
     setMotor(cw[3],ccw[3],controlled_motor1);
 
-    checking_output_msg.data.data[0] = motor1_pid.getFilteredVal();//1
-    checking_output_msg.data.data[1] = motor2_pid.getFilteredVal();//2
-    checking_output_msg.data.data[2] = motor3_pid.getFilteredVal();//3
-    checking_output_msg.data.data[3] = motor4_pid.getFilteredVal();//4
+    checking_output_msg.data.data[0] = controlled_motor1;//1
+    checking_output_msg.data.data[1] = controlled_motor2;//2
+    checking_output_msg.data.data[2] = controlled_motor3;//3
+    checking_output_msg.data.data[3] = controlled_motor4;//4
 
     RCSOFTCHECK(rcl_publish(&checking_input_motor, &checking_input_msg, NULL));
 

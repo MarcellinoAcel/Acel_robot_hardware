@@ -78,20 +78,17 @@ Kinematics::rps Kinematics::getRPS(float linear_x, float linear_y, float angular
 Kinematics::velocities Kinematics::getVelocities(float rps1, float rps2, float rps3, float rps4)
 {
     Kinematics::velocities vel;
-    float average_rps_x;
-    float average_rps_y;
-    float average_rps_a;
 
     //convert average revolutions per minute to revolutions per second
-    average_rps_x = ((float)(-sin(toRad(45)) * rps1 + -sin(toRad(135)) * rps2 + -sin(toRad(225)) * rps3 + -sin(toRad(315)) * rps4) / total_wheels_); // rps
+    float average_rps_x = ((float)(-sin(toRad(45)) * rps1 + -sin(toRad(135)) * rps2 + -sin(toRad(225)) * rps3 + -sin(toRad(315)) * rps4) / total_wheels_); // rps
     vel.linear_x = average_rps_x * wheel_circumference_; // m/s
 
     //convert average revolutions per minute in y axis to revolutions per second
-    average_rps_y = ((float)(cos(toRad(45)) * rps1 + cos(toRad(135)) * rps2 + cos(toRad(225)) * rps3 + cos(toRad(315)) * rps4) / total_wheels_); // rps
+    float average_rps_y = ((float)(cos(toRad(45)) * rps1 + cos(toRad(135)) * rps2 + cos(toRad(225)) * rps3 + cos(toRad(315)) * rps4) / total_wheels_); // rps
     vel.linear_y = average_rps_y * wheel_circumference_; // m/s
 
     //convert average revolutions per minute to revolutions per second
-    average_rps_a = ((float)(-rps1 + rps2 - rps3 + rps4) / total_wheels_);
+    float average_rps_a = ((float)(-rps1 + rps2 - rps3 + rps4) / total_wheels_);
     vel.angular_z =  (average_rps_a * wheel_circumference_) / (robot_circumference_); //  rad/s
 
     return vel;
@@ -105,7 +102,7 @@ int Kinematics::getTotalWheels(base robot_base)
         case SKID_STEER:            return 4;
         case MECANUM:               return 4;
         case OMNI:                  return 4;
-        default:                    return 2;
+        // default:                    return 2;
     }
 }
 
