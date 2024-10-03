@@ -21,6 +21,7 @@
 // #define LINO_BASE SKID_STEER            // 4WD robot
 // #define LINO_BASE MECANUM               // Mecanum drive robot
 #define LINO_BASE OMNI
+// const int OMNI = 4;
 
 //uncomment the motor driver you're using
 // #define USE_GENERIC_2_IN_MOTOR_DRIVER      // Motor drivers with 2 Direction Pins(INA, INB) and 1 PWM(ENABLE) pin ie. L298, L293, VNH5019
@@ -35,7 +36,7 @@
 // #define USE_MPU9250_IMU
 #define USE_BNO055_IMU
 
-#define K_P 50
+#define K_P 10
 #define K_I 100
 #define K_D 0
 

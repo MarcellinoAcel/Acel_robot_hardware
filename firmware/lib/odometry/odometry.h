@@ -24,7 +24,8 @@ class Odometry
 {
     public:
         Odometry();
-        void update(float vel_dt, float linear_vel_x, float linear_vel_y, float angular_vel_z);
+        void update_position(float x_pos, float y_pos, float z_pos, float linear_x, float linear_y, float angular_z);
+        void update(float vel_dt, float linear_vel_x, float linear_vel_y, float angular_vel_z, float orient_Z);
         nav_msgs__msg__Odometry getData();
 
     private:
